@@ -87,7 +87,7 @@ class Simulator {
 			System.err.println("GUI: enabled  (up to " + gui_fps + " FPS)");
 		}
 		
-		int ag_score = 0, ag_empty = 0, ag_road = 0;
+		int ag_score = 0, ag_empty = 0, ag_road = 0, ag_perimeter = 0, ag_extendable = 0, ag_giant = 0, ag_giant_perimeter = 0, ag_giant_extendable = 0;
 		double ag_utility = 0;
 		
 		PrintStream stats_output = null;
@@ -114,7 +114,7 @@ class Simulator {
 			if (stats_output != null) {
 			    for (int i = 0; i < stats.size(); ++ i) {
 			    	Record record = stats.get(i);
-			    	stats_output.println(round + "," + i + "," + record.score + "," + record.building + "," + record.resort + "," + record.empty + "," + record.perimeter + "," + record.extendable);
+			    	stats_output.println(round + "," + i + "," + record.score + "," + record.building + "," + record.resort + "," + record.empty + "," + record.perimeter + "," + record.extendable + "," + record.giant + "," + record.giant_perimeter + "," + record.giant_extendable);
 			    }
 			}
 			
@@ -122,6 +122,11 @@ class Simulator {
 			ag_utility += ((double)(last.score - last.building)) / last.resort;
 			ag_empty += last.empty;
 			ag_road += last.road;
+			ag_perimeter += last.perimeter;
+			ag_extendable += last.extendable;
+			ag_giant += last.giant;
+			ag_giant_perimeter += last.giant_perimeter;
+			ag_giant_extendable += last.giant_extendable;
 			
 			if (tournament_path == null) {
 				System.err.println("Round " + round + ":");
@@ -131,6 +136,7 @@ class Simulator {
 			    System.err.println("\tUtility of water/park cells: " + ((double)(last.score - last.building)) / last.resort);
 			    System.err.println("\tLength of perimeter: " + last.perimeter);
 			    System.err.println("\tNumber of extendable cells: " + last.extendable);
+			    System.err.println("\tLargest empty area: " + last.giant + ", perimeter: " + last.giant_perimeter + ", extendable empty cells: " + last.giant_extendable);
 			    if (timeout) 
 				System.err.println("\tPlayer timed out!");
 			} else {
@@ -145,6 +151,11 @@ class Simulator {
 	    System.err.println("\tAverage number of empty cells: " + ((double)ag_empty) / repeats);
 	    System.err.println("\tAverage number of road cells: " + ((double)ag_road) / repeats);
 	    System.err.println("\tAverage utilities of water/park cells: " + ag_utility / repeats);
+	    System.err.println("\tAverage length of final perimeter: " + ((double)ag_perimeter) / repeats);
+	    System.err.println("\tAverage number of extendable empty cells: " + ((double)ag_extendable) / repeats);
+	    System.err.println("\tAverage area of largest empty area: " + ((double)ag_giant) / repeats);
+	    System.err.println("\tAverage perimeter of largest empty area: " + ((double)ag_giant_perimeter) / repeats);
+	    System.err.println("\tAverage extendable cells of largest empty area: " + ((double)ag_giant_extendable) / repeats);
 		System.exit(0);
     }
 
