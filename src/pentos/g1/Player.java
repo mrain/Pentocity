@@ -14,17 +14,17 @@ import pentos.sim.Move;
 
 public class Player implements pentos.sim.Player {
 	private Random gen = new Random();
+	final int side = 50;
+	private boolean[][] isDisconnected;
     private Set<Cell> road_cells = new HashSet<Cell>();
     static int count = 0;
     public void init() { // function is called once at the beginning before play is called
-
+    	
+    	isDisconnected = new boolean[side][side];
     }
     
     public Move play(Building request, Land land) {
-    	if(count == 0) {
-    		++count;
-    		
-    	}
+    	
     	Building[] rotations = request.rotations();
     	int best_i = land.side + 1,
     		best_j = land.side + 1;
@@ -39,7 +39,8 @@ public class Player implements pentos.sim.Player {
     			Cell p = new Cell(i,j);
     			for (int ri = 0; ri < rotations.length; ++ri)
 				if(land.buildable(rotations[ri], p) 
-						&& (best_i > i || (best_i == i && best_j > j))) {
+						&& (best_i > i || (best_i == i && best_j > j))
+						&& !isDisconnected[i][j]) {
 					Move temp = new Move(true, 
 								request, 
 								p, 
@@ -47,19 +48,29 @@ public class Player implements pentos.sim.Player {
 								new HashSet<Cell>(), 
 								new HashSet<Cell>(), 
 								new HashSet<Cell>());
+					boolean disconnected = false;
 					Set<Cell> shiftedCells = new HashSet<Cell>();
-					for (Cell x : temp.request.rotations()[temp.rotation])
+					for (Cell x : temp.request.rotations()[temp.rotation]) {
 				    	shiftedCells.add(
 				    			new Cell(x.i+temp.location.i,
 				    					x.j+temp.location.j));
-				    
+				    	disconnected |= 
+				    			isDisconnected[x.i + temp.location.i][x.j + temp.location.j];
+					}
 				    // builda road to connect this building to perimeter
-				    Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
-				    if(roadCells != null) {
-				    	best_move = temp;
-				    	best_i = i;
-				    	best_j = j;
-				    }
+
+					if(!disconnected) {
+						Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
+					    if(roadCells != null) {
+					    	best_move = temp;
+					    	best_i = i;
+					    	best_j = j;
+					    } else {
+					    	for(Cell x : shiftedCells) {
+					    		isDisconnected[x.i][x.j] = true;
+					    	}
+					    }
+					}				
 				}
     		}
 	    //find closest free location to end
@@ -79,19 +90,30 @@ public class Player implements pentos.sim.Player {
 								new HashSet<Cell>(), 
 								new HashSet<Cell>(), 
 								new HashSet<Cell>());
+					
+					boolean disconnected = false;
 					Set<Cell> shiftedCells = new HashSet<Cell>();
-					for (Cell x : temp.request.rotations()[temp.rotation])
+					for (Cell x : temp.request.rotations()[temp.rotation]) {
 				    	shiftedCells.add(
 				    			new Cell(x.i+temp.location.i,
 				    					x.j+temp.location.j));
-				    
+				    	disconnected |= 
+				    			isDisconnected[x.i + temp.location.i][x.j + temp.location.j];
+					}
 				    // builda road to connect this building to perimeter
-				    Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
-				    if(roadCells != null) {
-				    	best_move = temp;
-				    	best_i = i;
-				    	best_j = j;
-				    }
+					
+					if(!disconnected) {
+						Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
+					    if(roadCells != null) {
+					    	best_move = temp;
+					    	best_i = i;
+					    	best_j = j;
+					    } else {
+					    	for(Cell x : shiftedCells) {
+					    		isDisconnected[x.i][x.j] = true;
+					    	}
+					    }
+					}				    
 				}
     		}
 	    }
