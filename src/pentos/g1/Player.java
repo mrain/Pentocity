@@ -23,23 +23,23 @@ public class Player implements pentos.sim.Player {
     	isDisconnected = new boolean[side][side];
     }
     
-    public Move play(Building request, Land land) {
-    	
+    public Move getBestMove(Building request, Land land) {
     	Building[] rotations = request.rotations();
     	int best_i = land.side + 1,
     		best_j = land.side + 1;
+    	int best_perimeter = -1;
     	Move best_move = null;
     	
     	//find first free location row by row
 	    if(request.type == Building.Type.RESIDENCE) {
 	    	best_i = land.side + 1;
 	        best_j = land.side + 1;
+	        
 	    	for (int i = 0; i < land.side; ++i) 
-	    	for ( int j = 0; j < land.side; ++j) {
+	    	for (int j = 0; j < land.side; ++j) {
     			Cell p = new Cell(i,j);
     			for (int ri = 0; ri < rotations.length; ++ri)
-				if(land.buildable(rotations[ri], p) 
-						&& (best_i > i || (best_i == i && best_j > j))
+				if(land.buildable(rotations[ri], p)
 						&& !isDisconnected[i][j]) {
 					Move temp = new Move(true, 
 								request, 
@@ -57,14 +57,26 @@ public class Player implements pentos.sim.Player {
 				    	disconnected |= 
 				    			isDisconnected[x.i + temp.location.i][x.j + temp.location.j];
 					}
+					
+					int perimeter = 0;
+					for(Cell x : shiftedCells) {
+						for(Cell y : x.neighbors()) {
+							if(!land.unoccupied(y)) {
+								++perimeter;
+							}
+						}
+						if(x.i == 0 || x.i == land.side - 1) ++ perimeter;
+						if(x.j == 0 || x.j == land.side - 1) ++ perimeter;						
+					}
 				    // builda road to connect this building to perimeter
-
-					if(!disconnected) {
+					
+					if(!disconnected && perimeter > best_perimeter) {
 						Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
 					    if(roadCells != null) {
 					    	best_move = temp;
 					    	best_i = i;
 					    	best_j = j;
+					    	best_perimeter = perimeter;
 					    } else {
 					    	for(Cell x : shiftedCells) {
 					    		isDisconnected[x.i][x.j] = true;
@@ -77,6 +89,7 @@ public class Player implements pentos.sim.Player {
 	    } else if(request.type == Building.Type.FACTORY) {
 	    	best_i = -1;
 	    	best_j = -1;
+	    	best_perimeter = -1;
 	    	for (int i = land.side - 1; i >= 0; --i) 
 	    	for ( int j = land.side - 1; j >= 0; --j) {
     			Cell p = new Cell(i,j);
@@ -100,14 +113,25 @@ public class Player implements pentos.sim.Player {
 				    	disconnected |= 
 				    			isDisconnected[x.i + temp.location.i][x.j + temp.location.j];
 					}
-				    // builda road to connect this building to perimeter
 					
-					if(!disconnected) {
+					int perimeter = 0;
+					for(Cell x : shiftedCells) {
+						for(Cell y : x.neighbors()) {
+							if(!land.unoccupied(y)) {
+								++perimeter;
+							}
+						}
+						if(x.i == 0 || x.i == land.side - 1) ++ perimeter;
+						if(x.j == 0 || x.j == land.side - 1) ++ perimeter;						
+					}
+				    // builda road to connect this building to perimeter
+					if(!disconnected && perimeter > best_perimeter) {
 						Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
 					    if(roadCells != null) {
 					    	best_move = temp;
 					    	best_i = i;
 					    	best_j = j;
+					    	best_perimeter = perimeter;
 					    } else {
 					    	for(Cell x : shiftedCells) {
 					    		isDisconnected[x.i][x.j] = true;
@@ -117,6 +141,12 @@ public class Player implements pentos.sim.Player {
 				}
     		}
 	    }
+	    return best_move;
+    }
+    public Move play(Building request, Land land) {
+    	
+    	
+	    Move best_move = getBestMove(request, land);
 	    
 	    //no move
 		if (best_move == null) {
@@ -137,8 +167,8 @@ public class Player implements pentos.sim.Player {
 	    if (roadCells != null) {
 			best_move.road = roadCells;
 			road_cells.addAll(roadCells);
-			int x = gen.nextInt()%2;
-			if(request.type == request.type.RESIDENCE && x==0) {
+			//int x = gen.nextInt();
+			if(request.type == request.type.RESIDENCE) {
 				
 				Set<Cell> markedForConstruction = new HashSet<Cell>();
 			    markedForConstruction.addAll(roadCells);
@@ -152,11 +182,7 @@ public class Player implements pentos.sim.Player {
 	    }
 	    else {// reject placement if building cannot be connected by road
 	    	//Kailash: This should never happen now.
-	    	System.out.println("No Road" + best_i + " " + best_j);
-	    	Cell p = new Cell(best_i, best_j);
-	    	System.out.println(land.buildable(best_move.request.rotations()[best_move.rotation], p));
-	    	return new Move(false);
-    
+	    	return new Move(false);    
 	    }
     }
     
