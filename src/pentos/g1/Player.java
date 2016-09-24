@@ -202,6 +202,7 @@ public class Player implements pentos.sim.Player {
 		}
 		else if (!checked[x.i][x.j] && land.unoccupied(x.i,x.j)) {
 		    x.previous = p;
+		    checked[x.i][x.j] = true;
 		    queue.add(x);	      
 		} 
 
