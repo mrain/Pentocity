@@ -39,8 +39,7 @@ public class Player implements pentos.sim.Player {
 	    	for (int j = 0; j < land.side; ++j) {
     			Cell p = new Cell(i,j);
     			for (int ri = 0; ri < rotations.length; ++ri)
-				if(land.buildable(rotations[ri], p)
-						&& !isDisconnected[i][j]) {
+				if(land.buildable(rotations[ri], p)) {
 					Move temp = new Move(true, 
 								request, 
 								p, 
@@ -94,8 +93,7 @@ public class Player implements pentos.sim.Player {
 	    	for ( int j = land.side - 1; j >= 0; --j) {
     			Cell p = new Cell(i,j);
     			for (int ri = 0; ri < rotations.length; ++ri)
-				if(land.buildable(rotations[ri], p) 
-						&& (best_i < i || (best_i == i && best_j < j))) {
+				if(land.buildable(rotations[ri], p)) {
 					Move temp = new Move(true, 
 								request, 
 								p, 
