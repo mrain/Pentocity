@@ -1,3 +1,8 @@
+How to use make:
+	make compile					compile the simulator
+	make gui g={group}				run given group in GUI mode
+	make run g={group} r={n}		repeatedly run given group n times
+===============================================================
 Author:  Kevin Shi, Orestis Polychroniou
 Email:   kshi@cs.columbia.edu, orestis@cs.columbia.edu
 
