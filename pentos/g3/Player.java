@@ -59,7 +59,10 @@ public class Player implements pentos.sim.Player {
 
 		public HashSet<Cell> build(SlotChoice choice, Land land) {
 			HashSet<Cell> road_cells = new HashSet<Cell>();
-			if (road_pos < 0 || road_pos >= land.side) return road_cells;
+			if (road_pos < 0 || road_pos >= land.side) {
+				cursor = choice.height;
+				return road_cells;
+			}
 			
 			for (int i = cursor; i < choice.height; ++i) {
 				if (land.unoccupied(i, road_pos)) road_cells.add(new Cell(i, road_pos));
@@ -134,7 +137,7 @@ public class Player implements pentos.sim.Player {
 			if (pos[0] == -1 || !land.buildable(request.rotations()[pos[2]], new Cell(pos[0], pos[1]))) {
 				return false;
 			} else {
-				slot.add(new Slot(start, scale[0], (((numSlot % 2) == 1)?(start + scale[0] + 1):(start-1))));
+				slot.add(new Slot(start, scale[0], (((numSlot % 2) == 1)?(start + scale[0]):(start-1))));
 				return true;
 			}
 		}
