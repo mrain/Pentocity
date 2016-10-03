@@ -43,7 +43,7 @@ public class Player implements pentos.sim.Player {
 		List<Move> candidates = new ArrayList<Move>();
 		List<Integer> candidates_perimeter = new ArrayList<Integer>();
 		List<Integer> candidates_changes = new ArrayList<Integer>();
-		int bestPerimeter = 0;
+		int bestPerimeter = -1;
 		for (int i = 0; i < order.size(); ++ i) {
 			Building[] rotations = request.rotations();
 			for (int k = 0; k < rotations.length; ++ k) {
@@ -52,6 +52,21 @@ public class Player implements pentos.sim.Player {
 					Set<Cell> shiftedCells = new HashSet<Cell>();
 				    for (Cell x : move.request.rotations()[move.rotation])
 				    	shiftedCells.add(new Cell(x.i+move.location.i,x.j+move.location.j));
+
+					Set<Cell> perimeters = getPerimeters(shiftedCells);
+
+					int num_road = 0, num_water = 0, num_park = 0;
+					for (Cell cell : perimeters) {
+						if (road_cells.contains(cell)) ++ num_road;
+						else if (land.isField(cell)) ++ num_park;
+						else if (land.isPond(cell)) ++ num_water;
+					}
+
+					if (num_road == 0) {
+						Set<Cell> road_to_build = findShortestRoad(shiftedCells, land);
+						if (road_to_build == null) continue;
+						move.road = road_to_build;
+					}
 
 					int perimeter = 0;
 					for (Cell x : shiftedCells) {
@@ -71,25 +86,46 @@ public class Player implements pentos.sim.Player {
 						bestPerimeter = perimeter;
 					}
 
-					Set<Cell> perimeters = getPerimeters(shiftedCells);
 
-					int num_road = 0, num_water = 0, num_park = 0;
-					for (Cell cell : perimeters) {
-						if (road_cells.contains(cell)) ++ num_road;
-						else if (land.isField(cell)) ++ num_park;
-						else if (land.isPond(cell)) ++ num_water;
-					}
-
-					if (num_road == 0) {
-						Set<Cell> road_to_build = findShortestRoad(shiftedCells, land);
-						if (road_to_build == null) continue;
-						move.road = road_to_build;
-					}
 					
-					if (request.type == Building.Type.RESIDENCE) { // for residences, build random ponds and fields connected to it
+
+					candidates.add(move);
+				}
+			}
+			if (candidates.size() > 15) break;
+		}
+		if (candidates.isEmpty()) {
+			return new Move(false);
+		}
+
+		for (int i = 0; i < candidates.size(); ++ i) {
+			Move move = candidates.get(i);
+			Set<Cell> shiftedCells = new HashSet<Cell>();
+			for (Cell x : move.request.rotations()[move.rotation])
+				shiftedCells.add(new Cell(x.i+move.location.i,x.j+move.location.j));
+			shiftedCells.addAll(move.road);
+			shiftedCells.addAll(move.water);
+			shiftedCells.addAll(move.park);
+			int perimeter = 0;
+			for (Cell x : shiftedCells) {
+				for (Cell y : x.neighbors())
+					if (!land.unoccupied(y))
+						++ perimeter;
+				if(x.i == 0 || x.i == land.side - 1) ++ perimeter;
+				if(x.j == 0 || x.j == land.side - 1) ++ perimeter;						
+			}
+			candidates_perimeter.add(perimeter);
+			candidates_changes.add(getChangesOfEmptySpaces(move, land));
+
+					/*int num_water = 0, num_park = 0;
+					for (Cell cell : perimeters) {
+						if (land.isField(cell)) ++ num_park;
+						else if (land.isPond(cell)) ++ num_water;
+					}*/
+					if (move.request.type == Building.Type.RESIDENCE) { // for residences, build random ponds and fields connected to it
 					    Set<Cell> markedForConstruction = new HashSet<Cell>();
 					    markedForConstruction.addAll(move.road);
-						if (num_water == 0) {
+						if (/*num_water == 0*/ true) {
 							//move.water = randomWalk(shiftedCells, markedForConstruction, land, 4, 2);
 							int best_perimeter = 100;
 							Set<Cell> best_water = new HashSet<Cell>();
@@ -117,7 +153,7 @@ public class Player implements pentos.sim.Player {
 
 						}
 					    markedForConstruction.addAll(move.water);
-						if (num_park == 0) {
+						if (/*num_park == 0*/ true) {
 							//move.park = randomWalk(shiftedCells, markedForConstruction, land, 4, 1);
 							Set<Cell> best_park = new HashSet<Cell>();
 							int best_perimeter = 100;
@@ -145,26 +181,7 @@ public class Player implements pentos.sim.Player {
 							move.park = best_park;
 						}
 					}
-					shiftedCells.addAll(move.road);
-					shiftedCells.addAll(move.water);
-					shiftedCells.addAll(move.park);
-					perimeter = 0;
-					for (Cell x : shiftedCells) {
-						for (Cell y : x.neighbors())
-							if (!land.unoccupied(y))
-								++ perimeter;
-						if(x.i == 0 || x.i == land.side - 1) ++ perimeter;
-						if(x.j == 0 || x.j == land.side - 1) ++ perimeter;						
-					}
-					candidates_perimeter.add(perimeter);
-					candidates_changes.add(getChangesOfEmptySpaces(move, land));
-					candidates.add(move);
-				}
-			}
-			if (candidates.size() > 10) break;
 		}
-		if (candidates.isEmpty())
-			return new Move(false);
 		
 		//Choose a candidate
 		//return candidates.get(gen.nextInt(candidates.size()));
