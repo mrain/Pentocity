@@ -31,7 +31,7 @@ public class Player implements pentos.sim.Player {
 		Building[] rotations = move.request.rotations();
 		Set<Cell> builds = new HashSet<Cell>();
 		for (Cell cell : rotations[move.rotation])
-			builds.add(cell);
+			builds.add(new Cell(cell.i + move.location.i, cell.j + move.location.j));
 		builds.addAll(move.road);
 		builds.addAll(move.water);
 		builds.addAll(move.park);
@@ -120,6 +120,7 @@ public class Player implements pentos.sim.Player {
 						Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
 					    if(roadCells != null) {
 					    	best_move = temp;
+							best_changes = changes;
 					    	best_i = i;
 					    	best_j = j;
 					    	best_perimeter = perimeter;
@@ -178,6 +179,7 @@ public class Player implements pentos.sim.Player {
 						Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
 					    if(roadCells != null) {
 					    	best_move = temp;
+							best_changes = changes;
 					    	best_i = i;
 					    	best_j = j;
 					    	best_perimeter = perimeter;
