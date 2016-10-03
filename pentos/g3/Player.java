@@ -12,8 +12,144 @@ public class Player implements pentos.sim.Player {
 	private Random gen = new Random();
 	private Set<Cell> all_road_cells = new HashSet<Cell>();
 
+	private enum Type {FACTORY_SLOT, CUSTOM_PEREMETER};
+
 	private static int INF = (int)1e9;
 	private static int VERTICAL_GAP = 6;
+
+	private final Type strategy = Type.FACTORY_SLOT;
+	// FACTORY_SLOT's parameters
+	private static int SLOT_GAP = 15;
+
+	private class Slot {
+		public int start = -1;
+		public int len = -1;
+		public int cursor = 0;
+		public int road_pos = -1;
+		public int bottom = -1;
+
+		public Slot(int _start, int _len, int _road_pos) {
+			start = _start;
+			len = _len;
+			cursor = 0;
+			road_pos = _road_pos;
+			bottom = start + len;
+			if (road_pos == bottom) ++bottom;
+		}
+
+		public SlotChoice fit(Building request, Land land) {
+			SlotChoice res = new SlotChoice();
+			res.height = -1;
+
+			int[] states = getPosition(request, cursor, start, len);
+			if (states[0] == -1) return res;
+
+			Building b = request.rotations()[states[2]];
+			int[] scale = getScale(b);
+			Cell pos = new Cell(states[0], states[1]);
+
+			if (land.buildable(b, pos) && forRoad(cursor, cursor + scale[0] - 1, road_pos, land)) {
+				res.height = cursor + scale[0];
+				res.pos = pos;
+				res.rotation = states[2];
+			}
+
+			return res;
+		}
+
+		public HashSet<Cell> build(SlotChoice choice, Land land) {
+			HashSet<Cell> road_cells = new HashSet<Cell>();
+			if (road_pos < 0 || road_pos >= land.side) return road_cells;
+			
+			for (int i = cursor; i < choice.height; ++i) {
+				if (land.unoccupied(i, road_pos)) road_cells.add(new Cell(i, road_pos));
+			}
+			cursor = choice.height;
+
+			return road_cells;
+		}
+
+	}
+
+	private ArrayList<Slot> slot = new ArrayList<Slot>();
+
+	private boolean forRoad(int x1, int x2, int y, Land land) {
+		if (y == -1) return true;
+		for (int i = x1; i <= x2; ++i)
+			if (!all_road_cells.contains(new Cell(i, y)) && !land.unoccupied(i, y)) return false;
+		return true;
+	}
+
+	private int[] getScale(Building bcells) {
+		int x1 = INF, x2 = 0, y1 = INF, y2 = 0;
+		for (Cell c : bcells) {
+			x1 = Math.min(x1, c.i);
+			x2 = Math.max(x2, c.i);
+			y1 = Math.min(y1, c.j);
+			y2 = Math.max(y2, c.j);
+		}
+		
+		int[] res = new int[2];
+		res[0] = x2 - x1 + 1; res[1] = y2 - y1 + 1;
+		return res;
+	}
+
+	private int[] getPosition(Building bcells, int x, int y, int dy) {
+		int[] res = new int[3];
+		res[0] = res[1] = res[2] = -1;
+
+		Building[] rotation = bcells.rotations();
+		for (int i = 0; i < rotation.length; ++i) {
+			int[] scale = getScale(rotation[i]);
+			if (scale[1] == dy) {
+				res[0] = res[1] = INF;
+				for (Cell c : bcells) {
+					res[0] = Math.min(res[0], c.i);
+					res[1] = Math.min(res[1], c.j);
+				}
+				res[0] = x - res[0]; res[1] = y - res[1];
+				res[2] = i;
+				return res;
+			}
+		}
+		return res;
+	}
+
+	private boolean newSlot(Building request, Land land) {
+		int[] scale = getScale(request);
+		if (scale[0] < scale[1]) {
+			int c = scale[0];
+			scale[0] = scale[1]; scale[1] = c;
+		}
+		int numSlot = slot.size();
+
+		int start = 0;
+		if (numSlot > 0) start = slot.get(numSlot - 1).bottom;
+		int[] pos = getPosition(request, 0, start, scale[1]); // position.x, position.y, rotation
+		if (pos[0] != -1 && land.buildable(request.rotations()[pos[2]], new Cell(pos[0], pos[1]))) {
+			slot.add(new Slot(start, scale[1], (((numSlot % 2) == 1)?(start + scale[1]):(start - 1))));
+			return true;
+		} else {
+			pos = getPosition(request, 0, start, scale[0]);
+			if (pos[0] == -1 || !land.buildable(request.rotations()[pos[2]], new Cell(pos[0], pos[1]))) {
+				return false;
+			} else {
+				slot.add(new Slot(start, scale[0], (((numSlot % 2) == 1)?(start + scale[0] + 1):(start-1))));
+				return true;
+			}
+		}
+	}
+
+
+	private class SlotChoice {
+		int slot_id;
+		int height;
+		Cell pos;
+		int rotation;
+
+		SlotChoice() {}
+	}
+
 
 	private class Evaluation {
 		public int peri_delta;
@@ -40,15 +176,55 @@ public class Player implements pentos.sim.Player {
 	}
 
 	public void init() { // function is called once at the beginning before play is called
-
 	}
 
 	public Move play(Building request, Land land) {
 		if (request.type == Building.Type.FACTORY) {
-			return playFactory(request, land);
+			if (strategy == Type.FACTORY_SLOT) return playFactoryBySlot(request, land);
+			else if (strategy == Type.CUSTOM_PEREMETER) return playFactory(request, land);
+			else return playFactory(request, land);
 		} else {
 			return playResidence(request, land);
 		}
+	}
+
+	private Move playFactoryBySlot(Building request, Land land) {
+		ArrayList<Move> candidates = new ArrayList<Move>();
+		ArrayList<SlotChoice> choices = new ArrayList<SlotChoice>();
+
+		int min_height = INF;
+		int chosen = 0;
+		for (int i = 0; i < slot.size(); ++i) {
+			SlotChoice res = slot.get(i).fit(request, land);
+			res.slot_id = i;
+			if (res.height != -1) {
+				candidates.add(new Move(true, request, res.pos, res.rotation, new HashSet<Cell>(), new HashSet<Cell>(), new HashSet<Cell>()));
+				choices.add(res);
+
+				if (res.height < min_height) {
+					min_height = res.height;
+					chosen = candidates.size() - 1;
+				}
+			}
+		}
+		if (min_height > SLOT_GAP && newSlot(request, land)) {
+			SlotChoice res = slot.get(slot.size() - 1).fit(request, land);
+			HashSet<Cell> road_cells = slot.get(slot.size() - 1).build(res, land);
+			all_road_cells.addAll(road_cells);
+			return new Move(true, request, res.pos, res.rotation, road_cells, new HashSet<Cell>(), new HashSet<Cell>());
+		}
+
+		if (candidates.size() == 0) {
+			if (newSlot(request, land) == false) return playFactory(request, land);
+			SlotChoice res = slot.get(slot.size() - 1).fit(request, land);
+			HashSet<Cell> road_cells = slot.get(slot.size() - 1).build(res, land);
+			all_road_cells.addAll(road_cells);
+			return new Move(true, request, res.pos, res.rotation, road_cells, new HashSet<Cell>(), new HashSet<Cell>());
+		}
+
+		candidates.get(chosen).road = slot.get(choices.get(chosen).slot_id).build(choices.get(chosen), land);
+		all_road_cells.addAll(candidates.get(chosen).road);
+		return candidates.get(chosen);
 	}
 
 	private Move playFactory(Building request, Land land) {
@@ -60,7 +236,6 @@ public class Player implements pentos.sim.Player {
 
 		ArrayList<Evaluation> scores = getFacEvaluation(candidates, request, land);
 
-		
 		// pick one with highest evaluation
 		int chosen = -1;
 		for (int i = 1; i < candidates.size(); ++i) {
@@ -80,7 +255,7 @@ public class Player implements pentos.sim.Player {
 	private Move playResidence(Building request, Land land) {
 		ArrayList<Move> candidates = getResCandidates(request, land);
 		if (candidates.isEmpty()) {
-			System.out.println("reject a RESIDENCE");
+			System.out.println("reject a RESIDENCE: no valid position candidate");
 			return new Move(false);
 		}
 
@@ -94,7 +269,7 @@ public class Player implements pentos.sim.Player {
 			}
 		}
 		if (chosen == -1) {
-			System.out.println("reject a RESIDENCE!!");
+			System.out.println("reject a RESIDENCE!! : no accept candidate");
 			return new Move(false);
 		}
 		all_road_cells.addAll(candidates.get(chosen).road);
