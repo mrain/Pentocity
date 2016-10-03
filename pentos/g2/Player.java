@@ -12,6 +12,9 @@ import pentos.sim.Cell;
 import pentos.sim.Land;
 import pentos.sim.Move;
 
+// kailush strategy + factory in slot strategy
+// fatal bugs unfixed
+
 public class Player implements pentos.sim.Player {
 	private Random gen = new Random();
 	final int ITERATION_COUNT = 200;

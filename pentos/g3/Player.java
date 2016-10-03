@@ -7,6 +7,9 @@ import pentos.sim.Move;
 
 import java.util.*;
 
+// structured, without connect components of perimeter consideration, with factory placed in slot(general compact strategy as backup)
+// bugs unfixed in general compact strategy(no road)
+
 public class Player implements pentos.sim.Player {
 
 	private Random gen = new Random();
