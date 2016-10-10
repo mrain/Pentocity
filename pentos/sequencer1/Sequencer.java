@@ -17,7 +17,7 @@ public class Sequencer implements pentos.sim.Sequencer {
     
     public Building next() {
     	++ count;
-    	System.out.println(count);
+    	//System.out.println(count);
 		if (gen.nextDouble() < ratio)
 		    return starsResidence();
 		else {
