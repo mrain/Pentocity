@@ -9,7 +9,7 @@ public class Sequencer implements pentos.sim.Sequencer {
     private Random gen;
     private final double ratio = 0.7; // ratio of residences to total number of buildings
 
-    public void init() {
+    public void init(Long seed) {
 	gen = new Random();
     }
     

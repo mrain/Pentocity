@@ -11,7 +11,8 @@ public class Sequencer implements pentos.sim.Sequencer {
     private final double ratio = 0.8; // ratio of residences to total number of buildings
 
     public void init(Long seed) {
-		gen = new Random();
+		if (seed == null) gen = new Random();
+		else gen = new Random(seed);
 		count = 0;
     }
     
@@ -19,9 +20,10 @@ public class Sequencer implements pentos.sim.Sequencer {
     	++ count;
     	//System.out.println(count);
 		if (gen.nextDouble() < ratio)
-		    return starsResidence();
+		    if (gen.nextDouble() < 0.6) return starsResidence();
+		    else return barResidence();
 		else {
-			if (count <= 130)
+			if (count <= 140)
 		    	return randomSmallFactory();
 		    else return largeFactory();
 		}
@@ -50,6 +52,16 @@ public class Sequencer implements pentos.sim.Sequencer {
 		residence.add(new Cell(1,0));
 		residence.add(new Cell(2,1));
 		residence.add(new Cell(1,2));
+		return new Building(residence.toArray(new Cell[residence.size()]), Building.Type.RESIDENCE);
+    }
+
+    private Building barResidence() {
+		Set<Cell> residence = new HashSet<Cell>();
+		residence.add(new Cell(0,0));
+		residence.add(new Cell(0,1));
+		residence.add(new Cell(0,2));
+		residence.add(new Cell(0,3));
+		residence.add(new Cell(0,4));
 		return new Building(residence.toArray(new Cell[residence.size()]), Building.Type.RESIDENCE);
     }
 
