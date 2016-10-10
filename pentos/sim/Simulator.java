@@ -26,6 +26,7 @@ class Simulator {
 		String tournament_path = null;
 		// long[] timeout = new long [] {1000, 10000, 1000};
 		long gui_refresh = 250;
+		Long seed = null;
 		String stats_file = null;
 		long repeats = 1;
 		try {
@@ -39,6 +40,11 @@ class Simulator {
 				    if (a+1 >= args.length)
 					throw new IllegalArgumentException("Missing sequencer name");
 				    sequencer = args[++a];
+				}
+				else if (args[a].equals("-i") || args[a].equals("--seed")) {
+				    if (++a >= args.length)
+					throw new IllegalArgumentException("Missing seed");
+				    seed = new Long(Long.parseLong(args[a]));
 				}
 				else if (args[a].equals("--gui-fps")) {
 				    if (++a == args.length)
@@ -100,7 +106,7 @@ class Simulator {
 			boolean timeout = false;
 			try {
 			    timeout = play(group, g_class, sequencer, s_class,
-					   gui, gui_manual_refresh_on_cutter,
+					   gui, seed, gui_manual_refresh_on_cutter,
 					   gui_refresh, cpu_time_ms, score, stats);
 			} catch (Exception e) {
 			    if (tournament_path != null) throw e;
@@ -164,6 +170,7 @@ class Simulator {
 			    String sequencer,
 			    Class <Sequencer> s_class,
 			    boolean gui,
+			    Long seed,
 			    boolean gui_manual_refresh_on_cutter,
 			    long gui_refresh,
 			    long cpu_time_ms,
@@ -226,7 +233,7 @@ class Simulator {
 		player.init();
 		if (log)
 		    System.err.println("Initializing sequencer...");
-		generator.init();
+		generator.init(seed);
 		if (log)
 		    System.err.println("Construction begins ...");
 		do {
