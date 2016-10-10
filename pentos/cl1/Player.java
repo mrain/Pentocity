@@ -1,4 +1,4 @@
-package pentos.cy1;
+package pentos.kailush;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -11,9 +11,6 @@ import pentos.sim.Building;
 import pentos.sim.Cell;
 import pentos.sim.Land;
 import pentos.sim.Move;
-
-// perimeter compact + straight parks and ponds + connect components of perimeters neighbor to free space
-// bugs unfixed: crush sometime(have not found out why), not very compact, residences and factories grow in same direction
 
 public class Player implements pentos.sim.Player {
 	private Random gen = new Random();
@@ -75,6 +72,7 @@ public class Player implements pentos.sim.Player {
 
 	    //find first free location row by row
 	    if(request.type == Building.Type.RESIDENCE) {
+			System.out.println("RESIDENCE");
 			best_i = land.side + 1;
 			best_j = land.side + 1;
 
@@ -135,6 +133,7 @@ public class Player implements pentos.sim.Player {
 				}
 			//find closest free location to end
 		} else if(request.type == Building.Type.FACTORY) {
+			System.out.println("FACTORY");
 			best_i = -1;
 			best_j = -1;
 			best_perimeter = -1;
@@ -234,27 +233,31 @@ public class Player implements pentos.sim.Player {
 	void optimize_water_and_park(Set<Cell> roadCells, Land land, Move best_move, Set<Cell> shiftedCells) {
 		Set<Cell> markedForConstruction = new HashSet<Cell>();
 		markedForConstruction.addAll(roadCells);
-		Set<Set<Cell>> park_options = getStraightParksAndPonds(land, best_move);
+		Set<Set<Cell>> park_options = getStraightParksAndPonds(shiftedCells, roadCells, land, best_move);
 
 		Set<Cell> best_park = getBestRandomParkOrWater(shiftedCells, markedForConstruction, land, 1);
 
 
-		best_park = getActualBestParkOrWater(park_options, land, best_park);
+		best_park = getActualBestParkOrWater(new HashSet<Cell>(), park_options, land, best_park);
 		best_move.park = best_park;
 		markedForConstruction.addAll(best_move.park);
 
-		if(park_options.contains(best_park)) {
-			park_options.remove(best_park);
-		}
-
 		Set<Cell> best_water = getBestRandomParkOrWater(shiftedCells, markedForConstruction, land, 2);
-		best_water = getActualBestParkOrWater(park_options, land, best_water);
+		best_water = getActualBestParkOrWater(best_move.park, park_options, land, best_water);
 		best_move.water = best_water;
 	}
 
-	private Set<Cell> getActualBestParkOrWater(Set<Set<Cell>> park_options, Land land, Set<Cell> best_park) {
+	private Set<Cell> getActualBestParkOrWater(Set<Cell> used, Set<Set<Cell>> park_options, Land land, Set<Cell> best_park) {
 		int best_perimeter = getPerimeter(land, best_park);
 		for(Set<Cell> park_option: park_options) {
+			boolean flag = true;
+			for (Cell cell : park_option)
+				if (used.contains(cell)) {
+					flag = false;
+					break;
+				}
+			if (!flag) continue;
+
 			int perimeter = getPerimeter(land, park_option);
 			int size = park_option.size();
 			if(size < best_park.size() || (size == best_park.size() && perimeter < best_perimeter)) {
@@ -265,19 +268,30 @@ public class Player implements pentos.sim.Player {
 		return best_park;
 	}
 
-	private Set<Set<Cell>> getStraightParksAndPonds(Land land, Move best_move) {
+	private boolean outside(int i, int j, Land land) {
+		if (i < 0 || i >= land.side || j < 0 || j >= land.side) return true;
+		return false;
+	}
+
+	private Set<Set<Cell>> getStraightParksAndPonds(Set<Cell> shiftedCells, Set<Cell> roadCells, Land land, Move best_move) {
 		Set<Set<Cell>> park_options = new HashSet<Set<Cell>>();
 		for(Cell x : best_move.request.rotations()[best_move.rotation]) {
 			int[] dx = {0,0,1,-1};
 			int[] dy = {1,-1,0,0};
-			for (Cell y : x.neighbors()) {
+			Cell cur = new Cell(best_move.location.i + x.i, best_move.location.j + x.j);
+			for (Cell y : cur.neighbors()) {
 				int i = y.i;
 				int j = y.j;
 				for(int k=0;k<4;++k) {
 					Set<Cell> option = new HashSet<Cell>();
 					boolean empty = true;
 					for(int cellnum = 0;cellnum<4;++cellnum) {
-						if(!land.unoccupied(i + dx[k]*cellnum,j + dy[k]*cellnum)) {
+						if (outside(i + dx[k] * cellnum, j + dy[k] * cellnum, land)) {
+							empty = false;
+							continue;
+						}
+						Cell tmp = new Cell(i + dx[k] * cellnum, j + dy[k] * cellnum);
+						if(!land.unoccupied(tmp) || shiftedCells.contains(tmp) || roadCells.contains(tmp)) {
 							empty = false;
 						} else {
 							option.add(new Cell(i+dx[k]*cellnum, j + dy[k]*cellnum));
