@@ -121,22 +121,7 @@ public class Player implements pentos.sim.Player {
 			ArrayList<Evaluation> scores = new ArrayList<Evaluation>();
 
 			// get Candidates
-			for (int i = 0; i < land.side; ++i) 
-				for (int j = 0; j < land.side; ++j) {
-					Cell p = new Cell(i,j);
-					for (int ri = 0; ri < rotations.length; ++ri)
-						if(land.buildable(rotations[ri], p)) {
-							Move temp = new Move(true, 
-									request, 
-									p, 
-									ri, 
-									new HashSet<Cell>(), 
-									new HashSet<Cell>(), 
-									new HashSet<Cell>());
-							candidates.add(temp);
-							scores.add(new Evaluation());
-						}
-				}
+			getCandidates(candidates, scores, rotations, request, land);
 
 			// get Evaluations
 			for (int i = 0; i < candidates.size(); ++i) {
@@ -158,10 +143,7 @@ public class Player implements pentos.sim.Player {
 					if(x.j == 0 || x.j == land.side - 1) ++ perimeter;						
 				}
 				scores.get(i).perimeter = perimeter;
-
-				// builda road to connect this building to perimeter
 				scores.get(i).changes = getChangesOfEmptySpaces(candidates.get(i), land);
-
 				scores.get(i).ipj = candidates.get(i).location.i + candidates.get(i).location.j;
 				scores.get(i).imj = candidates.get(i).location.i - candidates.get(i).location.j;
 
@@ -189,35 +171,15 @@ public class Player implements pentos.sim.Player {
 					best_score = scores.get(i);
 				}
 			}
-			//find closest free location to end
 		} else if(request.type == Building.Type.FACTORY) {
 			System.out.println("FACTORY");
-			//best_i = -1;
-			//best_j = -1;
-			//best_perimeter = -1;
-
 			ArrayList<Move> candidates = new ArrayList<Move>();
 			ArrayList<Evaluation> scores = new ArrayList<Evaluation>();
 
 			// get candidates
-			for (int i = land.side - 1; i >= 0; --i) 
-				for ( int j = land.side - 1; j >= 0; --j) {
-					Cell p = new Cell(i,j);
-					for (int ri = 0; ri < rotations.length; ++ri)
-						if(land.buildable(rotations[ri], p)) {
-							Move temp = new Move(true, 
-									request, 
-									p, 
-									ri, 
-									new HashSet<Cell>(), 
-									new HashSet<Cell>(), 
-									new HashSet<Cell>());
+			getCandidates(candidates, scores, rotations, request, land);
 
-							candidates.add(temp);
-							scores.add(new Evaluation());
-						}
-				}
-
+			// get evaluations
 			for (int i = 0; i < candidates.size(); ++i) {
 				Set<Cell> shiftedCells = new HashSet<Cell>();
 				for (Cell x : candidates.get(i).request.rotations()[candidates.get(i).rotation]) {
@@ -237,10 +199,7 @@ public class Player implements pentos.sim.Player {
 					if(x.j == 0 || x.j == land.side - 1) ++ perimeter;						
 				}
 				scores.get(i).perimeter = perimeter;
-
-				// builda road to connect this building to perimeter
 				scores.get(i).changes = getChangesOfEmptySpaces(candidates.get(i), land);
-
 				scores.get(i).ipj = candidates.get(i).location.i + candidates.get(i).location.j;
 				scores.get(i).imj = candidates.get(i).location.i - candidates.get(i).location.j;
 
@@ -260,6 +219,7 @@ public class Player implements pentos.sim.Player {
 				scores.get(i).flag = true;
 				scores.get(i).road_len = roadCells.size();
 			}
+
 			// choose the best one
 			for (int i = 0; i < candidates.size(); ++i) {
 				if (scores.get(i).flag && (best_move == null || scores.get(i).isBetterFactory(best_score))) {
@@ -269,6 +229,25 @@ public class Player implements pentos.sim.Player {
 			}
 		}
 		return best_move;
+	}
+
+	void getCandidates(ArrayList<Move> candidates, ArrayList<Evaluation> scores, Building[] rotations, Building request, Land land) {
+		for (int i = 0; i < land.side; ++i) 
+			for (int j = 0; j < land.side; ++j) {
+				Cell p = new Cell(i,j);
+				for (int ri = 0; ri < rotations.length; ++ri)
+					if(land.buildable(rotations[ri], p)) {
+						Move temp = new Move(true, 
+								request, 
+								p, 
+								ri, 
+								new HashSet<Cell>(), 
+								new HashSet<Cell>(), 
+								new HashSet<Cell>());
+						candidates.add(temp);
+						scores.add(new Evaluation());
+					}
+			}
 	}
 
 	private static int num = 0;
