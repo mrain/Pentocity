@@ -33,12 +33,33 @@ public class Player implements pentos.sim.Player {
 
 		Evaluation() {}
 
-		boolean isBetter(Evaluation other) {
+		boolean isBetterFactory(Evaluation other) {
 			if (perimeter > other.perimeter) return true;
 			if (perimeter < other.perimeter) return false;
 
 			if (changes > other.changes) return true;
 			if (changes < other.changes) return false;
+
+			if (ipj > other.ipj) return true;
+			if (ipj < other.ipj) return false;
+
+			if (imj < other.imj) return true;
+
+			return false;
+		}
+
+		boolean isBetterResidence(Evaluation other) {
+			if (perimeter > other.perimeter) return true;
+			if (perimeter < other.perimeter) return false;
+
+			if (changes > other.changes) return true;
+			if (changes < other.changes) return false;
+
+			if (ipj < other.ipj) return true;
+			if (ipj > other.ipj) return false;
+
+			if (imj < other.imj) return true;
+
 			return false;
 		}
 	}
@@ -142,28 +163,28 @@ public class Player implements pentos.sim.Player {
 				scores.get(i).changes = getChangesOfEmptySpaces(candidates.get(i), land);
 
 				scores.get(i).ipj = candidates.get(i).location.i + candidates.get(i).location.j;
-				/*
-				min_ipj = Math.min(min_ipj, scores[i].ipj);
-				if (scores[i].ipj - min_ipj > 15) {
-					scores[i].flag = false;
+				scores.get(i).imj = candidates.get(i).location.i - candidates.get(i).location.j;
+
+				if (scores.get(i).ipj - min_ipj > 15) {
+					scores.get(i).flag = false;
 					continue;
 				}
-				*/
-
-				scores.get(i).imj = candidates.get(i).location.i - candidates.get(i).location.j;
 
 				Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
 				if (roadCells == null) {
 					scores.get(i).flag = false;
 					continue;
 				}
+
+				min_ipj = Math.min(min_ipj, scores.get(i).ipj);
+
 				scores.get(i).flag = true;
 				scores.get(i).road_len = roadCells.size();
 			}
 
 			// choose the best one
 			for (int i = 0; i < candidates.size(); ++i) {
-				if (scores.get(i).flag && (best_move == null || scores.get(i).isBetter(best_score))) {
+				if (scores.get(i).flag && (best_move == null || scores.get(i).isBetterResidence(best_score))) {
 					best_move = candidates.get(i);
 					best_score = scores.get(i);
 				}
@@ -223,36 +244,25 @@ public class Player implements pentos.sim.Player {
 				scores.get(i).ipj = candidates.get(i).location.i + candidates.get(i).location.j;
 				scores.get(i).imj = candidates.get(i).location.i - candidates.get(i).location.j;
 
+				if (max_ipj - scores.get(i).ipj > 15) {
+					scores.get(i).flag = false;
+					continue;
+				}
+
 				Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
 				if (roadCells == null) {
 					scores.get(i).flag = false;
 					continue;
 				}
+
+				max_ipj = Math.max(max_ipj, scores.get(i).ipj);
+				
 				scores.get(i).flag = true;
 				scores.get(i).road_len = roadCells.size();
-
-				/*
-				   if(!disconnected && (perimeter > best_perimeter
-				   || (perimeter == best_perimeter && changes < best_changes)
-				   || (perimeter==best_perimeter /*&& changes == best_changes && (i  + j) >  best_i + best_j))
-				   ||(perimeter==best_perimeter && changes == best_changes && (i  + j) ==  best_i + best_j) && Math.abs(i-j) < Math.abs(best_i - best_j)) {
-				   Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
-				   if(roadCells != null) {
-				   best_move = temp;
-				   best_i = i;
-				   best_j = j;
-				   best_perimeter = perimeter;
-				   } else {
-				   for(Cell x : shiftedCells) {
-				   isDisconnected[x.i][x.j] = true;
-				   }
-				   }
-				   }				    
-				 */
 			}
 			// choose the best one
 			for (int i = 0; i < candidates.size(); ++i) {
-				if (scores.get(i).flag && (best_move == null || scores.get(i).isBetter(best_score))) {
+				if (scores.get(i).flag && (best_move == null || scores.get(i).isBetterFactory(best_score))) {
 					best_move = candidates.get(i);
 					best_score = scores.get(i);
 				}
@@ -265,6 +275,7 @@ public class Player implements pentos.sim.Player {
 	static Set<Cell> prev_water=null;
 
 	public Move play(Building request, Land land) {
+		System.out.println("enter");
 		Move best_move = getBestMove(request, land);
 
 		//no move
