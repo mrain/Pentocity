@@ -88,20 +88,13 @@ public class Player implements pentos.sim.Player {
 
 	public Move getBestMove(Building request, Land land) {
 		Building[] rotations = request.rotations();
-		//int best_i = land.side + 1,
-		//best_j = land.side + 1;
-		//int best_perimeter = -1;
-		//int best_changes = 1000;
 		int max_ipj = 0, min_ipj = INF;
 		int max_imj = 0;
 		Move best_move = null;
 		Evaluation best_score = null;
 
-		//find first free location row by row
 		if(request.type == Building.Type.RESIDENCE) {
 			System.out.println("RESIDENCE");
-			//best_i = land.side + 1;
-			//best_j = land.side + 1;
 
 			ArrayList<Move> candidates = new ArrayList<Move>();
 			ArrayList<Evaluation> scores = new ArrayList<Evaluation>();
@@ -120,20 +113,17 @@ public class Player implements pentos.sim.Player {
 									new HashSet<Cell>(), 
 									new HashSet<Cell>());
 							candidates.add(temp);
+							scores.add(new Evaluation());
 						}
 				}
 
 			// get Evaluations
-
 			for (int i = 0; i < candidates.size(); ++i) {
-				//boolean disconnected = false;
 				Set<Cell> shiftedCells = new HashSet<Cell>();
 				for (Cell x : candidates.get(i).request.rotations()[candidates.get(i).rotation]) {
 					shiftedCells.add(
 							new Cell(x.i+candidates.get(i).location.i,
 								x.j+candidates.get(i).location.j));
-					//disconnected |= 
-					//	isDisconnected[x.i + temp.location.i][x.j + temp.location.j];
 				}
 
 				int perimeter = 0;
@@ -169,25 +159,6 @@ public class Player implements pentos.sim.Player {
 				}
 				scores.get(i).flag = true;
 				scores.get(i).road_len = roadCells.size();
-
-				/*
-				   if(!disconnected && ((changes < best_changes)
-				   || (perimeter > best_perimeter && changes == best_changes)
-				   ||(perimeter==best_perimeter && changes == best_changes && (i  + j) < best_i +  best_j)
-				   || (perimeter==best_perimeter && changes == best_changes && (i  + j) ==  best_i + best_j) && Math.abs(i-j) < Math.abs(best_i - best_j))) {
-				   Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
-				   if(roadCells != null) {
-				   best_move = temp;
-				   best_i = i;
-				   best_j = j;
-				   best_perimeter = perimeter;
-				   } else {
-				   for(Cell x : shiftedCells) {
-				   isDisconnected[x.i][x.j] = true;
-				   }
-				   }
-				   }				
-				 */
 			}
 
 			// choose the best one
@@ -222,18 +193,16 @@ public class Player implements pentos.sim.Player {
 									new HashSet<Cell>());
 
 							candidates.add(temp);
+							scores.add(new Evaluation());
 						}
 				}
 
 			for (int i = 0; i < candidates.size(); ++i) {
-				//boolean disconnected = false;
 				Set<Cell> shiftedCells = new HashSet<Cell>();
 				for (Cell x : candidates.get(i).request.rotations()[candidates.get(i).rotation]) {
 					shiftedCells.add(
 							new Cell(x.i+candidates.get(i).location.i,
 								x.j+candidates.get(i).location.j));
-					//disconnected |= 
-					//	isDisconnected[x.i + temp.location.i][x.j + temp.location.j];
 				}
 
 				int perimeter = 0;
