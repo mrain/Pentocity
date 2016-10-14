@@ -1,4 +1,4 @@
-package pentos.g1;
+package pentos.g0926;
 
 import java.util.ArrayList;
 import java.util.HashSet;
