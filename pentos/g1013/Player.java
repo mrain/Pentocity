@@ -121,7 +121,7 @@ public class Player implements pentos.sim.Player {
 			ArrayList<Evaluation> scores = new ArrayList<Evaluation>();
 
 			// get Candidates
-			getCandidates(candidates, scores, rotations, land);
+			getCandidates(candidates, scores, rotations, request, land);
 
 			// get Evaluations
 			for (int i = 0; i < candidates.size(); ++i) {
@@ -177,7 +177,7 @@ public class Player implements pentos.sim.Player {
 			ArrayList<Evaluation> scores = new ArrayList<Evaluation>();
 
 			// get candidates
-			getCandidates(candidates, scores, rotations, land);
+			getCandidates(candidates, scores, rotations, request, land);
 
 			// get evaluations
 			for (int i = 0; i < candidates.size(); ++i) {
@@ -231,7 +231,7 @@ public class Player implements pentos.sim.Player {
 		return best_move;
 	}
 
-	void getCandidates(ArrayList<Cell> candidates, ArrayList<Cell> scores, Building[] rotations, Land land) {
+	void getCandidates(ArrayList<Move> candidates, ArrayList<Evaluation> scores, Building[] rotations, Building request, Land land) {
 		for (int i = 0; i < land.side; ++i) 
 			for (int j = 0; j < land.side; ++j) {
 				Cell p = new Cell(i,j);
