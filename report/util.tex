@@ -1,1 +1,20 @@
 \section{Utilities for Analysis}
+\subsection{Necessity for average utilities}
+Since a single run of Pentocity has too much randomness, both in the sequencer and in the player, we developed some evaluation metrics. We modified the simulator to take as input an integer variable "repeats" that instructs the simulator to run the player "repeats" number of times and give the average of the different metrics we defined. The important metrics we used have been defined below.
+
+\subsection{Utility Descriptions}
+\subsubsection{Player Score} 
+This metric is the score at the end of the game and is our primary method of evaluating an idea. It is simply the score returned by the simulator. Clearly, we aim to maximise this.
+\subsubsection{Number of Empty Cells} 
+    This tells us how much whitespace is left unused so we can judge how well our algorithm packs buildings together. We aim to minimize this. This is useful to evaluate our building placement in our function "getBestMove".
+\subsubsection{Number of Road Cells} 
+    The total number of cells used to build roads. We use this to evaluate our road construction approach in the function "findShortestRoad".
+\subsubsection{Utility of Water/Park Cells} 
+    The sum of the total score that the water generates and the total score that the parks generate divided by the total number of cells. This was used to evaluate our water and park building strategy in the function optimizeWaterAndPark.
+
+
+\subsection{Discussion of Utilities}
+In any future description of scores and utilities, we mean the value of these scores averaged over 50 runs. The reason we picked 50 is as follows. We tried 10, 25 and 50 runs. 10 runs still had too much variance, and could differ from the 50 run score by as much as 40 points. 25 runs worked reasonably well (differing by at most 20 points), but we were not satisfied. 50 runs did not differ by more than 10 points between two separate trials and completed in reasonable time, which is why we chose it.
+\\
+It is worth noting that each of these metrics is not independent of each other. For example, when we implemented our perimeter strategy, our score went up by around 300 points. This change was in the getBestMove function and greatly reduced the number of empty cells from our naive strategy, but that was not the only change. The number of road cells also decreased, from around 500 cells to fewer than 400 and the utility of the ponds and parks increased by around 0.2. This led us to realise that we should look at all utilites, even for a change in an unrelated function.
+\\
