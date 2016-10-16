@@ -1,0 +1,18 @@
+\contentsline {section}{\numberline {1}Introduction}{2}
+\contentsline {section}{\numberline {2}Utilities for Analysis}{2}
+\contentsline {section}{\numberline {3}Strategies}{2}
+\contentsline {subsection}{\numberline {3.1}Algorithm process}{2}
+\contentsline {subsection}{\numberline {3.2}Building Placement}{2}
+\contentsline {subsubsection}{\numberline {3.2.1}global: row-by-row}{2}
+\contentsline {subsubsection}{\numberline {3.2.2}global: diagonal}{3}
+\contentsline {subsubsection}{\numberline {3.2.3}global: housing at center, factories on edges}{3}
+\contentsline {subsubsection}{\numberline {3.2.4}perimeter}{3}
+\contentsline {subsubsection}{\numberline {3.2.5}number of components}{4}
+\contentsline {subsection}{\numberline {3.3}Road Construction}{4}
+\contentsline {subsubsection}{\numberline {3.3.1}Shortest path approach}{4}
+\contentsline {subsubsection}{\numberline {3.3.2}Road pre-building}{5}
+\contentsline {subsubsection}{\numberline {3.3.3}close to the buildings}{5}
+\contentsline {subsection}{\numberline {3.4}Ponds and Fields}{5}
+\contentsline {subsection}{\numberline {3.5}Placement for While Objects}{5}
+\contentsline {section}{\numberline {4}Adversarial Distribution}{5}
+\contentsline {section}{\numberline {5}Tournament Analysis}{5}
