@@ -23,7 +23,7 @@ Using this naive approach, we could get a score of around 1600 to 1700, dependin
 Later, we switched to other strategies.
 
 %\subsubsection{global: diagonal}
-\paragraph{Building alone the diagonal}
+\paragraph{Building along the diagonal}
 This is another strategy of placing residences and factories in a way that separates them from each other. The residences are built from the top left corner to the bottom right corner, which means each time find the buildable coordinate with the lowest sum of row index and column index. The factories are build from the bottom right corner to the top left corner, which means each time find the buildable coordinate with the highest sum of row index and column index.\\
 
 The idea behind this approach is similar to the row-by-row approach in that it tries to separate the residences and factories. However, the diagonal gap is better than the row-by-row strategy because there are a larger number of possible locations with the same $(i+j)$ value to choose from. In addition, using this strategy we can better utilize the four borders but in row-by-row construction two of them are quickly occupied in the beginning.\\
