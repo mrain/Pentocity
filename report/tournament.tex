@@ -6,10 +6,59 @@ All strategies that we use aim to maximize the freedom of future building placem
 So we expect that our player would perform consistently well against every possible adversarial distribution.
 
 Because we didn't do any optimization to some specific distributions. It's performance may not be so good if
-the underline distribution has some simple ``optimal solution".
+the underline distribution has some simple ``optimal solution". But we tends to let the problem itself to decide
+which placement is ``better", instead of giving too specific instructions in some situations.
+
+\subsection{Performance}
+
+The result of the tournament is close to what we have expected.
+Despite the fact that our player's performance is quite well: it has the second best winning rounds (34, the
+first wins 37 rounds), and also the second best average score (1980.55, we'll explain why it's not the highest later).
+We want to highlight the one property of our player, that is ``robustness".
+
+\begin{figure}[ht]
+\centering
+\begin{subfigure}[t]{.45\textwidth}
+\centering
+\includegraphics[width=\textwidth]{Histograms/g1.png}
+\end{subfigure}
+~
+\begin{subfigure}[t]{.45\textwidth}
+\centering
+\includegraphics[width=\textwidth]{Histograms/g6.png}
+\end{subfigure}
+\caption{Score distribution of player 1 (left) and the highest average score player (right)}\label{fig:scores}
+\end{figure}
+
+First figure~\ref{fig:scores} shows the score distribution of our player. Most of our scores are concenterated above
+2000. Which makes our player has the highest median score as in figure~\ref{fig:median}. 
+
+Also one interesting fact about the highest average score player is, its score distribution has some isolated
+``very high" part, where we believe is the key of getting the highest average score.
+
+Figure~\ref{fig:average} shows that, on almost every distribution, our performance is significantly higher than
+the average. It shows the benefits if your strategy is robust and does not depend on the distribution.
+
+A more detailed table is listed in figure~\ref{fig:table}. If we average the scores for each distribution, our
+player wins 4 distributions and it's a tie with group 6. (While if you look into the distribution presented by
+group 6 and group 9, you'll find out that they are exactly the targeted distributions for group 6's strategy).
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=0.48\linewidth]{median.png}
+\end{center}
+\caption{Median scores of each player}\label{fig:median}
+\end{figure}
 
 
-\medskip
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[width=0.48\linewidth]{average.png}
+\end{center}
+\caption{Averge scores of player 1 on each distribution}\label{fig:average}
+\end{figure}
+
+\begin{figure}[ht]
 \begin{center}
 \begin{tabular}{| l | @{}c | @{}c | @{}c | @{}c | @{}c | @{}c | @{}c | @{}c | @{}c | @{}c |}
 \hline
@@ -45,4 +94,7 @@ misfits &1828.6 & 1822.8 & 1830.1 & {\bf \color{red} 1899.8} & 1778.9 & 1881.8 &
 \hline
 \end{tabular}
 \end{center}
+\caption{Average scores of each player running on each distribution. \newline
+The {\bf \color{red} bold red} ones are the distribution winner.}\label{fig:table}
+\end{figure}
 

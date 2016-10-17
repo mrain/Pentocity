@@ -1,4 +1,7 @@
 \contentsline {section}{\numberline {1}Introduction}{3}{section.1}
+\contentsline {subsubsection}{\numberline {1.0.1}Problem Description}{3}{subsubsection.1.0.1}
+\contentsline {subsubsection}{\numberline {1.0.2}Our High-level Approach}{3}{subsubsection.1.0.2}
+\contentsline {subsubsection}{\numberline {1.0.3}Report Outline}{3}{subsubsection.1.0.3}
 \contentsline {section}{\numberline {2}Utilities for Analysis}{4}{section.2}
 \contentsline {subsection}{\numberline {2.1}Necessity for average utilities}{4}{subsection.2.1}
 \contentsline {subsection}{\numberline {2.2}Utility Descriptions}{4}{subsection.2.2}
@@ -11,23 +14,24 @@
 \contentsline {subsection}{\numberline {3.1}Algorithm process}{5}{subsection.3.1}
 \contentsline {subsection}{\numberline {3.2}Building Placement}{5}{subsection.3.2}
 \contentsline {subsubsection}{\numberline {3.2.1}Pre-allocation}{5}{subsubsection.3.2.1}
-\contentsline {paragraph}{Row-by-row construction}{6}{section*.6}
-\contentsline {paragraph}{Building along the diagonal}{6}{section*.7}
-\contentsline {paragraph}{Residences at the center, factories to the borders}{7}{section*.8}
-\contentsline {subsubsection}{\numberline {3.2.2}Jigsaw Puzzle approach}{7}{subsubsection.3.2.2}
-\contentsline {subsubsection}{\numberline {3.2.3}The number of disconnected components}{8}{subsubsection.3.2.3}
+\contentsline {paragraph}{Row-by-row construction}{5}{section*.7}
+\contentsline {paragraph}{Building along the diagonal}{6}{section*.8}
+\contentsline {paragraph}{Residences at the center, factories to the borders}{6}{section*.9}
+\contentsline {subsubsection}{\numberline {3.2.2}Jigsaw Puzzle approach}{6}{subsubsection.3.2.2}
+\contentsline {subsubsection}{\numberline {3.2.3}The number of disconnected components}{7}{subsubsection.3.2.3}
 \contentsline {subsection}{\numberline {3.3}Road Construction}{8}{subsection.3.3}
-\contentsline {subsubsection}{\numberline {3.3.1}Shortest path approach}{9}{subsubsection.3.3.1}
-\contentsline {subsubsection}{\numberline {3.3.2}Road pre-building}{9}{subsubsection.3.3.2}
-\contentsline {subsubsection}{\numberline {3.3.3}Road alongside the buildings}{10}{subsubsection.3.3.3}
-\contentsline {subsection}{\numberline {3.4}Ponds and Fields}{10}{subsection.3.4}
-\contentsline {subsubsection}{\numberline {3.4.1}Utility}{10}{subsubsection.3.4.1}
-\contentsline {subsubsection}{\numberline {3.4.2}Number of Configurations}{11}{subsubsection.3.4.2}
-\contentsline {subsubsection}{\numberline {3.4.3}Evaluating a Park or Pond}{11}{subsubsection.3.4.3}
-\contentsline {subsubsection}{\numberline {3.4.4}Random Walks}{11}{subsubsection.3.4.4}
-\contentsline {subsubsection}{\numberline {3.4.5}Connecting to Previous Parks and Ponds}{12}{subsubsection.3.4.5}
-\contentsline {subsubsection}{\numberline {3.4.6}Straight Parks and Ponds}{12}{subsubsection.3.4.6}
-\contentsline {subsection}{\numberline {3.5}Adjusting Placement for Each Move}{12}{subsection.3.5}
-\contentsline {section}{\numberline {4}Adversarial Distribution}{13}{section.4}
-\contentsline {section}{\numberline {5}Tournament Analysis}{14}{section.5}
-\contentsline {subsection}{\numberline {5.1}Our expectation}{14}{subsection.5.1}
+\contentsline {subsubsection}{\numberline {3.3.1}Shortest path approach}{8}{subsubsection.3.3.1}
+\contentsline {subsubsection}{\numberline {3.3.2}Road pre-building}{8}{subsubsection.3.3.2}
+\contentsline {subsubsection}{\numberline {3.3.3}Road alongside the buildings}{8}{subsubsection.3.3.3}
+\contentsline {subsection}{\numberline {3.4}Ponds and Fields}{9}{subsection.3.4}
+\contentsline {subsubsection}{\numberline {3.4.1}Utility}{9}{subsubsection.3.4.1}
+\contentsline {subsubsection}{\numberline {3.4.2}Number of Configurations}{9}{subsubsection.3.4.2}
+\contentsline {subsubsection}{\numberline {3.4.3}Evaluating a Park or Pond}{10}{subsubsection.3.4.3}
+\contentsline {subsubsection}{\numberline {3.4.4}Random Walks}{10}{subsubsection.3.4.4}
+\contentsline {subsubsection}{\numberline {3.4.5}Connecting to Previous Parks and Ponds}{10}{subsubsection.3.4.5}
+\contentsline {subsubsection}{\numberline {3.4.6}Straight Parks and Ponds}{10}{subsubsection.3.4.6}
+\contentsline {subsection}{\numberline {3.5}Adjusting Placement for Each Move}{10}{subsection.3.5}
+\contentsline {section}{\numberline {4}Adversarial Distribution}{12}{section.4}
+\contentsline {section}{\numberline {5}Tournament Analysis}{13}{section.5}
+\contentsline {subsection}{\numberline {5.1}Our expectation}{13}{subsection.5.1}
+\contentsline {subsection}{\numberline {5.2}Performance}{13}{subsection.5.2}
