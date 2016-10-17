@@ -10,16 +10,17 @@
 \contentsline {section}{\numberline {3}Strategies}{6}{section.3}
 \contentsline {subsection}{\numberline {3.1}Algorithm process}{6}{subsection.3.1}
 \contentsline {subsection}{\numberline {3.2}Building Placement}{6}{subsection.3.2}
-\contentsline {subsubsection}{\numberline {3.2.1}global: row-by-row}{6}{subsubsection.3.2.1}
-\contentsline {subsubsection}{\numberline {3.2.2}global: diagonal}{7}{subsubsection.3.2.2}
-\contentsline {subsubsection}{\numberline {3.2.3}global: residences at center, factories on edges}{7}{subsubsection.3.2.3}
-\contentsline {subsubsection}{\numberline {3.2.4}perimeter}{8}{subsubsection.3.2.4}
-\contentsline {subsubsection}{\numberline {3.2.5}number of components}{8}{subsubsection.3.2.5}
+\contentsline {subsubsection}{\numberline {3.2.1}Pre-allocation}{6}{subsubsection.3.2.1}
+\contentsline {paragraph}{Row-by-row construction}{7}{section*.2}
+\contentsline {paragraph}{Building alone the diagonal}{7}{section*.3}
+\contentsline {paragraph}{Residences at the center, factories to the borders}{8}{section*.4}
+\contentsline {subsubsection}{\numberline {3.2.2}Jigsaw Puzzle approach}{8}{subsubsection.3.2.2}
+\contentsline {subsubsection}{\numberline {3.2.3}The number of disconnected components}{9}{subsubsection.3.2.3}
 \contentsline {subsection}{\numberline {3.3}Road Construction}{9}{subsection.3.3}
 \contentsline {subsubsection}{\numberline {3.3.1}Shortest path approach}{9}{subsubsection.3.3.1}
-\contentsline {subsubsection}{\numberline {3.3.2}Road pre-building}{9}{subsubsection.3.3.2}
-\contentsline {subsubsection}{\numberline {3.3.3}close to the buildings}{9}{subsubsection.3.3.3}
+\contentsline {subsubsection}{\numberline {3.3.2}Road pre-building}{10}{subsubsection.3.3.2}
+\contentsline {subsubsection}{\numberline {3.3.3}close to the buildings}{10}{subsubsection.3.3.3}
 \contentsline {subsection}{\numberline {3.4}Ponds and Fields}{10}{subsection.3.4}
 \contentsline {subsection}{\numberline {3.5}Adjusting Placement for Each Move}{10}{subsection.3.5}
-\contentsline {section}{\numberline {4}Adversarial Distribution}{11}{section.4}
-\contentsline {section}{\numberline {5}Tournament Analysis}{12}{section.5}
+\contentsline {section}{\numberline {4}Adversarial Distribution}{12}{section.4}
+\contentsline {section}{\numberline {5}Tournament Analysis}{13}{section.5}
