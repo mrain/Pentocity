@@ -21,6 +21,12 @@
 \contentsline {subsubsection}{\numberline {3.3.2}Road pre-building}{9}{subsubsection.3.3.2}
 \contentsline {subsubsection}{\numberline {3.3.3}Road alongside the buildings}{9}{subsubsection.3.3.3}
 \contentsline {subsection}{\numberline {3.4}Ponds and Fields}{10}{subsection.3.4}
-\contentsline {subsection}{\numberline {3.5}Adjusting Placement for Each Move}{10}{subsection.3.5}
-\contentsline {section}{\numberline {4}Adversarial Distribution}{11}{section.4}
-\contentsline {section}{\numberline {5}Tournament Analysis}{12}{section.5}
+\contentsline {subsubsection}{\numberline {3.4.1}Utility}{10}{subsubsection.3.4.1}
+\contentsline {subsubsection}{\numberline {3.4.2}Number of Configurations}{10}{subsubsection.3.4.2}
+\contentsline {subsubsection}{\numberline {3.4.3}Evaluating a Park or Pond}{10}{subsubsection.3.4.3}
+\contentsline {subsubsection}{\numberline {3.4.4}Random Walks}{11}{subsubsection.3.4.4}
+\contentsline {subsubsection}{\numberline {3.4.5}Connecting to Previous Parks and Ponds}{11}{subsubsection.3.4.5}
+\contentsline {subsubsection}{\numberline {3.4.6}Straight Parks and Ponds}{11}{subsubsection.3.4.6}
+\contentsline {subsection}{\numberline {3.5}Adjusting Placement for Each Move}{11}{subsection.3.5}
+\contentsline {section}{\numberline {4}Adversarial Distribution}{13}{section.4}
+\contentsline {section}{\numberline {5}Tournament Analysis}{14}{section.5}

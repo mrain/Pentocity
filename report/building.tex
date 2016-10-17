@@ -45,13 +45,14 @@ Based on this idea, we propose a robust measurement of ``regularity" -- the {\bf
 The perimeter strategy is a non-global strategy that looks at the cells around the candidate location for a requested building. For a candidate location, some of its cells are adjacent to already occupied cells in the map and some of its cells are neighbor to vacant cells in the map. The algorithm count the number of edges of the neighbour that it shares with an occupied cell, which is the perimeter of this location. Then we choose the candidate with the largest perimeter. The idea behind it is the larger perimeter means the buildings are more compactly packed. And, it has been shown that perimeter evaluation made a significant contribution to our good performance. Adding this strategy improved the score of the naive global strategy by around 300 points. 
 
 Finally, we use the diagonal strategy as our global strategy. However, we only use it to break ties between candidates that have the same perimeter.\\
+
 We also tried a different way to count the perimeter. That is to count the number of cells surrounding the candidate location, should the building be placed there. This differs from the the ordinary perimeter strategy, since the previous strategy counts edges instead of cells, so it might count certain cells multiple times. In practice, the edge counting strategy worked better, scoring around 30 points more. The reason for this is described in the image.
 
 As a summary, in the submitted version, we use the diagonal global strategy and the perimeter local strategy. When comparing different choices, we use the perimeter as the first key, $(i+j)$ as the second key, and $(i-j)$ as the third key.
 
 \subsubsection{The number of disconnected components}
 
-Based on the ``regularity" ideas before, we have tried another feature to choose the best location.
+Based on the ``regularity" ideas before, we have tried another criterion to choose the best location.
 
 In the previous section, we mentioned the number of cells that neighbor to already occupied cell. It generally makes the buildings compact, but sometimes creates small cut off areas that lower the land use efficiency. so we consider another measurement called number of components. It is defined as the number of connected components comprising vacant cells that are created when a building is placed. The idea is to create as few vacant components as possible. Figure \ref{fig: numComponents} shows the idea more intuitively.
 
