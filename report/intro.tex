@@ -1,13 +1,14 @@
 \section{Introduction}
-\subsubsection{Problem Description}
+\subsection{Problem Description}
 Pentocity at a high level is a packing problem. We are given an empty 50 x 50 grid of cells. The simulator sends requests to our program for a building to be built on the grid. The building distribution is completely unknown and may even be adversarial. The building is one of two types, a residence or a factory. The residences are in the shape of pentominos, while the factories are rectangles with side length upto five cells. Each building cell generates one point. Placing a residence near an existing park or pond of size four or higher generates two additional points for the residence, but only once per residence per pond/park. The buildings should also be connected to the edges with roads. We return the move, which is the location that the building is placed at, an optional set of cells for parks and ponds, and an optional set of cells, the new roads to be built. If the returned move does not contain a valid position for the building, this move is skipped. The game ends when three moves are skipped.\\
-\subsubsection{Our High-level Approach}
-Our approach looks at all possible valid locations to place the requested building at. Of these locations, the ones with the highest perimeter length are chosen. The algorithm then picks the location with the lowest (highest for factories) sum of row and column index to break ties. If ties still exist, it picks the one closest to the main diagonal.\\
+\subsection{Our High-level Approach}
+Our approach looks at all possible valid locations to place the requested building at. Of these locations, the ones with the highest perimeter length are chosen. The algorithm then picks the location with the lowest (highest for factories) sum of row and column index to break ties. If ties still exist, it picks the one closest to the main diagonal.
+The idea behind it was to improve the ``regularity" of everything that has been placed.\\
 The algorithm then runs a breadth first search from the building to find the shortest path to a road. If there are multiple shortest paths, the one with the highest perimeter is chosen.\\
 If the building is a residence, the algorithm looks for the nearest park and pond within a distance of three cells. If there is one, it extends the park or pond to touch the residence. If there is not park or pond within 3 cells distance from it, the algorithm looks at all vertical and horizontal long parks and ponds and picks the one with the least perimeter. The algorithm then generates 200 random walks and checks if any of these have a lower perimeter. The park and pond with the lowest possible perimeter is chosen finally. The resulting location of the building, set of road cells, park cells and pond cells are returned by the function.
-\subsubsection{Report Outline}
+\subsection{Report Outline}
 This report is divided into many sections. This section is the introduction.\\ 
 The next section describes how we determine whether a certain strategy is better than another. We describe metrics to determine how well an idea performs by looking at the final score, park and ponds and road cells.
 \\The section after that provides a detailed analysis of our algorithm and the different ideas we thought of and why they worked or why they were abandoned. It describes ideas for building placement, road construction, and pond and field generation.
 \\The fourth section describes our distribution for the input buildings and why we chose it.
-\\The last section is an experimental analysis of our approach and a comparison with other groups' algorithms.
+\\The last section is an analysis of our approach in this tournament.
