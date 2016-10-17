@@ -3,15 +3,14 @@
 Since a single run of Pentocity has too much randomness, both in the sequencer and in the player, we developed some evaluation metrics. We modified the simulator to take as input an integer variable "repeats" that instructs the simulator to run the player "repeats" number of times and give the average of the different metrics we defined. The important metrics we used have been defined below.
 
 \subsection{Utility Descriptions}
-\subsubsection{Player Score} 
+\paragraph{Player Score} 
 This metric is the score at the end of the game and is our primary method of evaluating an idea. It is simply the score returned by the simulator. Clearly, we aim to maximise this.
-\subsubsection{Number of Empty Cells} 
+\paragraph{Number of Empty Cells} 
     This tells us how much whitespace is left unused so we can judge how well our algorithm packs buildings together. We aim to minimize this. This is useful to evaluate our building placement in our function "getBestMove".
-\subsubsection{Number of Road Cells} 
+\paragraph{Number of Road Cells} 
     The total number of cells used to build roads. We use this to evaluate our road construction approach in the function "findShortestRoad".
-\subsubsection{Utility of Water/Park Cells} 
-    The sum of the total score that the water generates and the total score that the parks generate divided by the total number of cells. This was used to evaluate our water and park building strategy in the function optimizeWaterAndPark.
-
+\paragraph{Utility of Water/Park Cells} 
+    The sum of the total score that the ponds generates and the total score that the fields generate divided by the total number of water/park cells. This was used to evaluate our water and park building strategy in the function optimizeWaterAndPark.
 
 \subsection{Discussion of Utilities}
 In any future description of scores and utilities, we mean the value of these scores averaged over 50 runs. The reason we picked 50 is as follows. We tried 10, 25 and 50 runs. 10 runs still had too much variance, and could differ from the 50 run score by as much as 40 points. 25 runs worked reasonably well (differing by at most 20 points), but we were not satisfied. 50 runs did not differ by more than 10 points between two separate trials and completed in reasonable time, which is why we chose it.
