@@ -55,123 +55,144 @@ public class MyPadding implements Padding {
 		}
 		rowMaxCol += location;
 		rowMinCol += location;
-		boolean buildwater = false;
-		for (int i = row.getEnd() - 1, j = location; i >= row.getStart() && buildWater; i--) {
-			if (hasCell[i][j] == 0)
-				buildwater = true;
-		}
-		buildWater = buildwater;
-		if (buildWater) {
-			// starts from bottom left corner
-			for (int i = row.getEnd() - 1, j = location; i >= row.getStart() && waterCells < 4 && isStraight < 4; i--) {
-				if (hasCell[i][j] == 0 && land.unoccupied(i, j) && waterCells < 4) {
-					water.add(new Cell(i, j));
-					hasCell[i][j] = 1;
-					waterCells++;
-				}
-				if (j + 1 < 50 && j + 1 <= colRight && hasCell[i][j + 1] == 0 && land.unoccupied(i, j + 1)
-						&& waterCells < 4) {
-					water.add(new Cell(i, j + 1));
-					hasCell[i][j + 1] = 1;
-					waterCells++;
-				}
-				if (i - 1 >= row.getStart() && hasCell[i - 1][j] == 0 && land.unoccupied(i - 1, j) && waterCells < 4) {
-					water.add(new Cell(i - 1, j));
-					hasCell[i - 1][j] = 1;
-					waterCells++;
-				}
-
-				if (i - 1 >= row.getStart() && j + 1 < 50 && j + 1 <= colRight && hasCell[i - 1][j + 1] == 0
-						&& land.unoccupied(i - 1, j + 1) && waterCells < 4) {
-					water.add(new Cell(i - 1, j + 1));
-					hasCell[i - 1][j + 1] = 1;
-					waterCells++;
-				}
-
-				if (i + 1 < rowBottom && hasCell[i + 1][j] == 0 && land.unoccupied(i + 1, j) && waterCells < 4) {
-					water.add(new Cell(i + 1, j));
-					hasCell[i + 1][j] = 1;
-					waterCells++;
-				}
-
-				if (i + 1 < rowBottom && j + 1 < 50 && j + 1 <= colRight && hasCell[i + 1][j + 1] == 0
-						&& land.unoccupied(i + 1, j + 1) && waterCells < 4) {
-					water.add(new Cell(i + 1, j + 1));
-					// 1));
-					hasCell[i + 1][j + 1] = 1;
-					waterCells++;
-				}
+		colMax += location;
+		boolean oneLineWater = false;
+		Set<Cell> oneLineWaterCells = new HashSet<>();
+		int rowSize = row.getEnd() - row.getStart();
+		//System.out.println("RowSize: "+rowSize);
+		for (int i = rowTop, j = location - 1; i < rowBottom&&j>=0&&j<=49&&isStraight < 4&&rowSize>=4&&buildWater; i++) {
+			oneLineWater = true;
+			if(land.unoccupied(i, j))
+				oneLineWaterCells.add(new Cell(i, j));
+			if (hasCell[i][location] == 0) {
+				oneLineWater = false;
+				break;
 			}
-			// remove useless water cell
-			if (water.size() > 2) {
-				for (Iterator<Cell> iterator = water.iterator(); iterator.hasNext();) {
-					if (!isValid(iterator.next())) {
-						waterCells--;
-						iterator.remove();
+		}
+		if (oneLineWater) {
+			//System.out.println("One line water:");
+			water = oneLineWaterCells;
+			//printCells(water);
+		} else {
+			boolean buildwater = false;
+			for (int i = row.getEnd() - 1, j = location; i >= row.getStart() && buildWater; i--) {
+				if (hasCell[i][j] == 0)
+					buildwater = true;
+			}
+			buildWater = buildwater;
+			if (buildWater) {
+				// starts from bottom left corner
+				for (int i = row.getEnd() - 1, j = location; i >= row.getStart() && waterCells < 4
+						&& isStraight < 4; i--) {
+					if (hasCell[i][j] == 0 && land.unoccupied(i, j) && waterCells < 4) {
+						water.add(new Cell(i, j));
+						hasCell[i][j] = 1;
+						waterCells++;
+					}
+					if (j + 1 < 50 && j + 1 <= colRight && hasCell[i][j + 1] == 0 && land.unoccupied(i, j + 1)
+							&& waterCells < 4) {
+						water.add(new Cell(i, j + 1));
+						hasCell[i][j + 1] = 1;
+						waterCells++;
+					}
+					if (i - 1 >= row.getStart() && hasCell[i - 1][j] == 0 && land.unoccupied(i - 1, j)
+							&& waterCells < 4) {
+						water.add(new Cell(i - 1, j));
+						hasCell[i - 1][j] = 1;
+						waterCells++;
+					}
+
+					if (i - 1 >= row.getStart() && j + 1 < 50 && j + 1 <= colRight && hasCell[i - 1][j + 1] == 0
+							&& land.unoccupied(i - 1, j + 1) && waterCells < 4) {
+						water.add(new Cell(i - 1, j + 1));
+						hasCell[i - 1][j + 1] = 1;
+						waterCells++;
+					}
+
+					if (i + 1 < rowBottom && hasCell[i + 1][j] == 0 && land.unoccupied(i + 1, j) && waterCells < 4) {
+						water.add(new Cell(i + 1, j));
+						hasCell[i + 1][j] = 1;
+						waterCells++;
+					}
+
+					if (i + 1 < rowBottom && j + 1 < 50 && j + 1 <= colRight && hasCell[i + 1][j + 1] == 0
+							&& land.unoccupied(i + 1, j + 1) && waterCells < 4) {
+						water.add(new Cell(i + 1, j + 1));
+						// 1));
+						hasCell[i + 1][j + 1] = 1;
+						waterCells++;
 					}
 				}
-			}
-
-			boolean bottomUp = true;
-			int currentRowLocation = rowBottom - 1;
-			if (waterCells < 4 && isStraight < 4) {
-				if (rowBottom - 1 >= 0 && colLeft >= 0 && isValid(new Cell(rowBottom - 1, colLeft))) {
-					for (int i = rowBottom - 1, j = colLeft; i >= row.getStart() && waterCells < 4 && j >= 0
-							&& land.unoccupied(i, j); i--) {
-						if (hasCell[i][j] == 0) {
-							water.add(new Cell(i, j));
-							hasCell[i][j] = 1;
-							waterCells++;
-							currentRowLocation = i;
+				// remove useless water cell
+				if (water.size() > 2) {
+					for (Iterator<Cell> iterator = water.iterator(); iterator.hasNext();) {
+						if (!isValid(iterator.next())) {
+							waterCells--;
+							iterator.remove();
 						}
 					}
-				} else {
-					for (int i = row.getStart(), j = colLeft; i < rowBottom && waterCells < 4 && j >= 0
-							&& land.unoccupied(i, j); i++) {
-						if (hasCell[i][j] == 0) {
-							{
+				}
+
+				boolean bottomUp = true;
+				int currentRowLocation = rowBottom - 1;
+				if (waterCells < 4 && isStraight < 4) {
+					if (rowBottom - 1 >= 0 && colLeft >= 0 && isValid(new Cell(rowBottom - 1, colLeft))) {
+						for (int i = rowBottom - 1, j = colLeft; i >= row.getStart() && waterCells < 4 && j >= 0
+								&& land.unoccupied(i, j); i--) {
+							if (hasCell[i][j] == 0) {
 								water.add(new Cell(i, j));
 								hasCell[i][j] = 1;
 								waterCells++;
 								currentRowLocation = i;
 							}
 						}
-						bottomUp = false;
-					}
-				}
-			}
-			// remove useless water cell again
-			for (Iterator<Cell> iterator = water.iterator(); iterator.hasNext();) {
-				if (!isValid(iterator.next())) {
-					waterCells--;
-					iterator.remove();
-				}
-			}
-			if (waterCells < 4 && isStraight < 4) {
-				if (bottomUp) {
-					for (int i = currentRowLocation - 1, j = colLeft; i >= row.getStart() && waterCells < 4 && j >= 0
-							&& land.unoccupied(i, j); i--) {
-						if (hasCell[i][j] == 0) {
-							water.add(new Cell(i, j));
-							hasCell[i][j] = 1;
-							waterCells++;
-						}
-
-					}
-				} else {
-					for (int i = currentRowLocation + 1, j = colLeft; i < rowBottom && waterCells < 4 && j >= 0
-							&& land.unoccupied(i, j); i++) {
-						if (hasCell[i][j] == 0) {
-							water.add(new Cell(i, j));
-							hasCell[i][j] = 1;
-							waterCells++;
+					} else {
+						for (int i = row.getStart(), j = colLeft; i < rowBottom && waterCells < 4 && j >= 0
+								&& land.unoccupied(i, j); i++) {
+							if (hasCell[i][j] == 0) {
+								{
+									water.add(new Cell(i, j));
+									hasCell[i][j] = 1;
+									waterCells++;
+									currentRowLocation = i;
+								}
+							}
+							bottomUp = false;
 						}
 					}
 				}
-			}
+				// remove useless water cell again
+				for (Iterator<Cell> iterator = water.iterator(); iterator.hasNext();) {
+					if (!isValid(iterator.next())) {
+						waterCells--;
+						iterator.remove();
+					}
+				}
+				if (waterCells < 4 && isStraight < 4) {
+					if (bottomUp) {
+						for (int i = currentRowLocation - 1, j = colLeft; i >= row.getStart() && waterCells < 4
+								&& j >= 0 && land.unoccupied(i, j); i--) {
+							if (hasCell[i][j] == 0) {
+								water.add(new Cell(i, j));
+								hasCell[i][j] = 1;
+								waterCells++;
+							}
 
-		} else {
-			row.setWasNotRecentlyPadded();
+						}
+					} else {
+						for (int i = currentRowLocation + 1, j = colLeft; i < rowBottom && waterCells < 4 && j >= 0
+								&& land.unoccupied(i, j); i++) {
+							if (hasCell[i][j] == 0) {
+								water.add(new Cell(i, j));
+								hasCell[i][j] = 1;
+								waterCells++;
+							}
+						}
+					}
+				}
+			} else {
+				row.setWasNotRecentlyPadded();
+			}
 		}
 
 		// Add road when necessary
@@ -202,45 +223,60 @@ public class MyPadding implements Padding {
 			}
 		}
 		// EXTEND PARK TO TOUCH BUILDING
-		if (row.getParkLocation() < row.getStart()) {
-			// park is on top
-			// hasCell[temp.i + rowTop][location + temp.j];
-			if (offSet != 0) {
-				// System.out.println("extend1");
-				for (int i = row.getStart(); i < rowTop; i++) {
-					if (hasCell[i][rowMinCol] == 0 && land.unoccupied(i, rowMinCol))
-						park.add(new Cell(i, rowMinCol));
+		if(row.getParkLocation()<=49){
+			if (row.getParkLocation() < row.getStart()) {
+				// park is on top
+				if (offSet != 0) {
+					for (int i = row.getStart(); i < rowTop; i++) {
+						if (hasCell[i][rowMinCol] == 0 && land.unoccupied(i, rowMinCol))
+							park.add(new Cell(i, rowMinCol));
+					}
+					/*Set<Cell> extraPark = new HashSet<>(); 
+					for (int i = row.getStart(); i < rowTop; i++) {
+						if (hasCell[i][colMax] == 0 && land.unoccupied(i, colMax))
+							extraPark.add(new Cell(i, colMax));
+						if (hasCell[i][colMax] == 0 && !land.unoccupied(i, colMax)){
+							extraPark.clear();
+							break;
+						}
+					}
+					if(extraPark.size()!=0) park.addAll(extraPark);
+					else{
+						for (int i = row.getStart(); i < rowTop; i++) {
+							if (hasCell[i][rowMinCol] == 0 && land.unoccupied(i, rowMinCol))
+								park.add(new Cell(i, rowMinCol));
+						}
+					}*/
 				}
-			}
-			/*
-			 * if (rowTop - 1 > row.getParkLocation()) { for (int i =
-			 * row.getParkLocation() + 1; i < rowTop; i++) { park.add(new
-			 * Cell(i, location)); } }
-			 */
-		} else {
-			// park is at bottom
-			if (rowTop + rowMax < row.getParkLocation() - 1) {
-				// System.out.println("extend2"+","+ (rowTop + rowMax ) + ","
-				// +(row.getParkLocation()-1));
-				/*
-				 * for (int i = row.getStart(); i<row.getParkLocation(); i++) {
-				 * if(hasCell[i][rowMaxCol] == 0) park.add(new Cell(i,
-				 * rowMaxCol)); }
-				 */
-				for (int i = rowTop + rowMax + 1; i < row.getParkLocation(); i++) {
-					if (hasCell[i][rowMaxCol] == 0 && land.unoccupied(i, rowMaxCol))
-						park.add(new Cell(i, rowMaxCol));
+			} else {
+				// park is at bottom
+				if (rowTop + rowMax < row.getParkLocation() - 1) {
+					for (int i = rowTop + rowMax + 1; i < row.getParkLocation(); i++) {
+						if (hasCell[i][rowMaxCol] == 0 && land.unoccupied(i, rowMaxCol))
+							park.add(new Cell(i, rowMaxCol));
+					}
+					/*Set<Cell> extraPark = new HashSet<>(); 
+					for (int i = rowTop + rowMax + 1; i < row.getParkLocation(); i++) {
+						if (hasCell[i][colMax] == 0 && land.unoccupied(i, colMax))
+							extraPark.add(new Cell(i, colMax));
+						if (hasCell[i][colMax] == 0 && !land.unoccupied(i, colMax)){
+							extraPark.clear();
+							break;
+						}
+					}
+					if(extraPark.size()!=0) park.addAll(extraPark);
+					else{
+						for (int i = rowTop + rowMax + 1; i < row.getParkLocation(); i++) {
+							if (hasCell[i][rowMinCol] == 0 && land.unoccupied(i, rowMinCol))
+								park.add(new Cell(i, rowMinCol));
+						}
+					}*/
 				}
 			}
 		}
-		/*
-		 * if (offSet != 0) { if (row.getParkLocation() < rowTop) { // park is
-		 * on top for (int i = row.getParkLocation() + 1; i < rowTop; i++) {
-		 * park.add(new Cell(i, location)); } } else { // park is at bottom for
-		 * (int i = row.getParkLocation() - 1; i > rowTop; i--) { park.add(new
-		 * Cell(i, location)); } } }
-		 */
+		
 		row.setCurrentLocation(location - 1);
+		if(water.size()<4) water.clear();
 		return new Move(true, request, new Cell(rowTop, location), rotation, road, water, park);
 	}
 

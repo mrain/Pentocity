@@ -1,92 +1,133 @@
 package pentos.g10;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import pentos.sim.Building;
-import pentos.sim.Cell;
 import pentos.sim.Land;
+import pentos.sim.Cell;
 
-public class FactoryPlanner implements Planner{
+import java.util.*;
+import java.lang.*;
 
-	@Override
-	public Action makeAPlan(Player player, Building request, Land land) {
-		double score = -100.0;
-		Action toTake = new Action();
+public class FactoryPlanner implements Planner
+{
 
-		// try all cells as start point
-		for (Cell thisStart : player.factoryStart) {
-			/*
-			 * Because the factory grows from the bottom right corner, the
-			 * starting point to be used to build it should be the bottom right
-			 * corner.
-			 */
-			Building[] rotations = request.rotations();
-			int len = rotations.length;
-			// System.out.println(len+" rotations available.");
-			for (int i = 0; i < len; i++) {
-				Building b = rotations[i];
-				/*
-				 * 4 ways to interpret the starting point: 1. As the top left
-				 * corner 2. As the top right corner 3. As the bottom left
-				 * corner 4. As the bottom right corner
-				 * 
-				 * But since land.buildable() only interprets the point as top
-				 * left, we need to do the shifting ourselves
-				 * 
-				 */
-				Cell fromTopLeft = thisStart;
-				Cell fromTopRight = ToolBox.shiftFromTopRight(b, thisStart);
-				Cell fromBottomLeft = ToolBox.shiftFromBottomLeft(b, thisStart);
-				Cell fromBottomRight = ToolBox.shiftFromBottomRight(b, thisStart);
-				Set<Cell> startPoints = new HashSet<>();
-				if (fromTopLeft != null)
-					startPoints.add(fromTopLeft);
-				if (fromTopRight != null)
-					startPoints.add(fromTopRight);
-				if (fromBottomLeft != null)
-					startPoints.add(fromBottomLeft);
-				if (fromBottomRight != null)
-					startPoints.add(fromBottomRight);
+    @Override
+    public Action makeAPlan(Player player, Building request, Land land)
+    {
+        return packFactory(player, request, land);
+    }
 
-				for (Cell c : startPoints) {
-					/* If this move is valid, evaluate it. */
-					boolean canBuild = land.buildable(b, c);
-					if (canBuild) {
-						Action toCheck = new Action(request, c, i);
 
-						/*
-						 * Include the road cells
-						 */
-						Set<Cell> roads = RoadFinder.findRoad(player, toCheck, land);
-						if (roads == null) {
-							System.out.println("Cannot plan roads. This building will not work.");
-							continue;
-						}
-						toCheck.setRoadCells(roads);
+    private Action packFactory(Player player, Building request, Land land)
+    {
+        int[] rows              = player.factoryRows;
+        List<Integer> availRows = new ArrayList<Integer>();
+        int height              = getHeight(request, land);
+        int length              = getLength(request, height);
+        Building[] rotations    = request.rotations();
 
-						/*
-						 * The score of a solution is, for now, decided by how
-						 * close it can be packed with the existing cluster.
-						 */
-						// thisScore=calculateScore(residenceStart,occupyThen,availThen,roads);
-						double thisScore = PlanEvaluator.evaluatePlan(player, toCheck, land);
-						if (thisScore > score) {
-							score = thisScore;
-							toTake = toCheck;
-						}
-					}
+        //System.out.println(height);
+        //System.out.println(length);
 
-				} // looped all possible shifts of start points
-			} // looped all rotations
-		} // looped all candidate positions
-		System.out.println("The optimal solution so far has score:" + score);
+        for (int i = 0; i < land.side; i++) {
+            if (rows[i] == height) {
+                availRows.add(i);
+            }
+            /* no rows with this height yet */
+            else if (rows[i] == 0) {
+                availRows.add(i);
+                break;
+            }
+        }
 
-		/* If the score is not 0, perform it. */
-		if (score == -100.0) {
-			System.out.println("No solution found.");
-		}
-		return toTake;
-	}
+        for (int row : availRows) {
+            int playerRow = row;
+            row = land.side - (row + height);
+            System.out.println(playerRow);
+            System.out.println(row);
+            int j = 0;
+            /* search for unoccupied cell in row */
+            while (!land.unoccupied(row, j) && j < land.side) {
+                j++;
+            }
 
+            /* check if enought space to build */
+            if (land.side - j >= length) {
+                Cell start = new Cell(row, j);
+                System.out.println(start);
+
+                if (!land.buildable(request, start)) {
+                    continue;
+                }
+                Action action = new Action(request, start);
+
+                /* reserve rows */
+                if (rows[playerRow] == 0) {
+                    player.updateFactoryRows(playerRow, height);
+                    int blockedRows = playerRow;
+                    while (blockedRows++ < playerRow + height - 1
+                           && playerRow < land.side) {
+                        player.updateFactoryRows(blockedRows, land.side);
+                    }
+                    if (playerRow > 0 && rows[playerRow-1] != land.side+ 1) {
+                        player.updateFactoryRows(blockedRows, land.side + 1);
+                    }
+                }
+                /* dynamically add roads above */
+                Set<Cell> roads = new HashSet<>();
+                Set<Cell> currentRoads = player.roadcells;
+                if (row - 1 >= 0 && playerRow > 0 && rows[playerRow - 1] != land.side + 1) {
+                    for (int k = j; k < length + j; k++) {
+                        System.out.println(k);
+                        Cell roadCandidate = new Cell(row - 1, k);
+                        if (!currentRoads.contains(roadCandidate)) {
+                            roads.add(roadCandidate);
+                        }
+                    }
+                }
+                /* dynamically add roads below */
+                if (playerRow > 0 && rows[playerRow - 1] == land.side + 1) {
+                    for (int k = j; k < length + j; k++) {
+                        Cell roadCandidate = new Cell(row + height, k);
+                        if (!currentRoads.contains(roadCandidate)) {
+                            roads.add(roadCandidate);
+                        }
+                    }
+                }
+                action.setRoadCells(roads);
+                System.out.println(roads);
+
+                return action;
+            }
+        }
+
+        /* could not build factory using this mechanism */
+        return null;
+    }
+
+    private int getLength(Building request, int height)
+    {
+        return request.size() / height;
+    }
+
+    private int getHeight(Building request, Land land)
+    {
+        int iMax = 0;
+        int iMin = land.side - 1;
+        int jMax = 0;
+        int jMin = land.side - 1;
+
+        Iterator<Cell> it = request.iterator();
+
+        /* find min and max coordinates */
+        while (it.hasNext()) {
+            Cell c = it.next();
+            //System.out.println(c);
+
+            if (c.i > iMax) {
+                iMax = c.i;
+            }
+        }
+
+        return iMax + 1;
+    }
 }

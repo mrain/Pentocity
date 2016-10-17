@@ -16,10 +16,10 @@ public class PlanEvaluator {
 	 * less than roadThreshold road cells, penalty becomes size *
 	 * roadUnderThresholdPrice
 	 */
-	static double buildRoadPenalty = -4.0;
+	static double buildRoadPenalty = -8.0;
 	
-	static int roadThreshold = 7;
-	static double roadUnderThresholdPrice = -4.0;
+	static int roadThreshold = 16;
+	static double roadUnderThresholdPrice = -0.0;
 	static double roadAboveThresholdPrice = -0.0;
 
 	/*
@@ -29,7 +29,7 @@ public class PlanEvaluator {
 	static int roadNeighborRadius = 10;
 	static int roadNeighborThreshold = 5;
 	static double enoughRoadNeighborsPrice = 0;
-	static double notEnoughRoadNeighborsPrice = -10.0;
+	static double notEnoughRoadNeighborsPrice = -0.0;
 
 	/*
 	 * The price of a road neighbor is different when there are or are not
@@ -38,7 +38,7 @@ public class PlanEvaluator {
 	static int borderRadius = 10;
 	static int borderThreshold = 3;
 	static double enoughBorderPrice = 0;
-	static double notEnoughBorderPrice = -14.0;
+	static double notEnoughBorderPrice = -16.0;
 
 	/*
 	 * If the residence is adjacent to park, give a bonus. If the residence
@@ -79,12 +79,17 @@ public class PlanEvaluator {
 	/*
 	 * If the building blocks an existing road, give a serious penalty.
 	 */
-	static double blockRoadPenalty = -35.0;
+	static double blockRoadPenalty = -64.0;
 
 	/*
 	 * If the building leaves unreachable whitespace, give a serious penalty.
 	 */
-	static double breakSpacePenalty = -5.0;
+	static double breakSpacePenalty = -0.0;
+	
+	/*
+	 * Penalize whitespace above this building
+	 */
+	static double whiteSpacePenalty=-0.0;
 	
 	/* Setters */
 	public static void setBuildRoadPenalty(double buildRoadPenalty) {
@@ -183,6 +188,10 @@ public class PlanEvaluator {
 		PlanEvaluator.breakSpacePenalty = breakSpacePenalty;
 	}
 
+	public static void setWhiteSpacePenalty(double whiteSpacePenalty) {
+		PlanEvaluator.whiteSpacePenalty = whiteSpacePenalty;
+	}
+
 	public static double evaluatePlan(Player player, Action action, Land land) {
 		Building b = action.getBuilding();
 		if (b == null) {
@@ -275,26 +284,31 @@ public class PlanEvaluator {
 		/* Border related score */
 		score += calculateBorderScore(toOccupy, player, action, land);
 
-		// /* Park and water related score calculation */
-		// double parkScore = calculateParkScore(toOccupy, player, action,
-		// land);
-		// score += parkScore;
-		// double waterScore = calculateWaterScore(toOccupy, player, action,
-		// land);
-		// score += waterScore;
+		 /* Park and water related score calculation */
+		 double parkScore = calculateParkScore(toOccupy, player, action,
+		 land);
+		 score += parkScore;
+		 double waterScore = calculateWaterScore(toOccupy, player, action,
+		 land);
+		 score += waterScore;
 
 		/* How packed is the building to the existing cluster */
 		double packedToCluster = compactnessScore(toOccupy, player, action, land);
 		score += packedToCluster;
+		
+		/* How much whitespace it leaves above it */
+		double whiteSpacePenalty=countWhiteSpace(toOccupy,player,action,land);
+		System.out.println("White space penalty is: "+whiteSpacePenalty);
+		score+=whiteSpacePenalty;
 
 		// /* The tidiness of the land map */
 		// double tidiness = tidinessScore(toOccupy, land);
 		// score += tidiness;
 		//
-		// /* The distance to the starting border. */
-		// double distancePenalty = distanceScore(toOccupy, player, action,
-		// land);
-		// score += distancePenalty;
+		 /* The distance to the starting border. */
+		 double distancePenalty = distanceScore(toOccupy, player, action,land);
+		 System.out.println("The distance penalty for this residence is "+distancePenalty);
+		 score += distancePenalty;
 
 		/* Check if the building will block a road */
 		boolean blockRoad = checkBlockRoads(action, player, land);
@@ -311,10 +325,23 @@ public class PlanEvaluator {
 			System.out.println("This action will break the connected whitespace.");
 			score += breakSpacePenalty;
 		}
-
 		return score;
 	}
-
+	public static double countWhiteSpace(Set<Cell> toOccupy,Player player,Action action,Land land){
+		Set<Cell> total=ToolBox.combineSets(action.getAbsoluteBuildingCells(),action.getRoadCells(),action.getParkCells(),action.getWaterCells());
+		Set<Cell> allNeighbors=ParkAndWaterFinder.findTwoLevelNeighbors(total, land);
+		Cell topLeft=ToolBox.findTopLeft(action.getAbsoluteBuildingCells());
+		double score=0.0;
+		int count=0;
+		for(Cell c:allNeighbors){
+			if(c.i<=topLeft.i)
+				count++;
+		}
+		score=whiteSpacePenalty*count;
+		System.out.println(count+" white space cells above.");
+		return score;
+	}
+	
 	public static double distanceScore(Set<Cell> toOccupy, Player player, Action action, Land land) {
 		// calculate how far it's from the corner
 		double score = 0.0;
@@ -326,7 +353,7 @@ public class PlanEvaluator {
 			Cell start = ToolBox.findBottomRight(action.getAbsoluteBuildingCells());
 			distance = ToolBox.calculateVerticalDistance(start, land.side);
 		}
-		score -= distancePrice * distance;
+		score += distancePrice * distance;
 		return score;
 	}
 
@@ -479,6 +506,7 @@ public class PlanEvaluator {
 
 	public static double compactnessScore(Set<Cell> toOccupy, Player player, Action action, Land land) {
 		Set<Cell> itself = action.getAbsoluteBuildingCells();
+		Set<Cell> all=ToolBox.combineSets(itself,action.getRoadCells(),action.getParkCells(),action.getWaterCells());
 
 		double score = 0.0;
 		int packedToCluster = 0;
@@ -487,7 +515,7 @@ public class PlanEvaluator {
 			// packedToCluster = ToolBox.setInterception(player.residenceStart,
 			// itself).size();
 
-			for (Cell c : itself) {
+			for (Cell c : all) {
 				if (player.residenceStart.contains(c)) {
 					// check how many neighbors are occupied
 					Cell[] nei = c.neighbors();
@@ -501,7 +529,7 @@ public class PlanEvaluator {
 			// packedToCluster = ToolBox.setInterception(player.factoryStart,
 			// itself).size();
 
-			for (Cell c : itself) {
+			for (Cell c : all) {
 				if (player.factoryStart.contains(c)) {
 					// check how many neighbors are occupied
 					Cell[] nei = c.neighbors();
@@ -532,6 +560,24 @@ public class PlanEvaluator {
 		if (!canDo) {
 			System.out.println("The action cannot be performed?!");
 			return false;
+		}
+		for(Cell c:action.getRoadCells()){
+			if(!land.unoccupied(c)){
+				System.out.println("Error: Road cell "+c+" is already occupied!");
+				return false;
+			}
+		}
+		for(Cell c:action.getParkCells()){
+			if(!land.unoccupied(c)){
+				System.out.println("Error: Park cell "+c+" is already occupied!");
+				return false;
+			}
+		}
+		for(Cell c:action.getWaterCells()){
+			if(!land.unoccupied(c)){
+				System.out.println("Error: Water cell "+c+" is already occupied!");
+				return false;
+			}
 		}
 
 		/* Validate if there is any overlap of cells */
@@ -732,7 +778,6 @@ public class PlanEvaluator {
 				System.out.println("Still hope for vacant roads. ");
 				return false;
 			}
-
 		}
 
 	}

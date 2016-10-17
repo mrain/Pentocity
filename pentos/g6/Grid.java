@@ -11,7 +11,6 @@ public class Grid {
 	private static int factoryRowSizeShift = 2;
 	private static int[] numResidenceRowsPerSize = { 6, 4, 1 };
 	private static int residenceRowSizeShift = 3;
-
 	private static int factoryRowCurrentPosition = 0;// starts from bottom
 	// private static int factoryRowCurrentPosition = 49;// starts from bottom
 	private static int residenceRowCurrentPosition = 0;// starts from top

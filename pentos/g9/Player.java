@@ -13,14 +13,23 @@ public class Player implements pentos.sim.Player {
     private int PACKING_FACTOR_MULTIPLE = 10; // score multiple for each adjacent cell
     private int POND_BONUS_SCORE = 20; // score to add for a pond
     private int FIELD_BONUS_SCORE = 20; // score to add for a field
-    private int BUILD_ROAD_PENALTY = 50; // penalty for each additional road cell built
-    private int BUILD_PARK_PENALTY = 4; // penalty for each additional water/park built
-    private int ROAD_ADJ_PENALTY = 5; // penalty for each adjacent road cell
-    private int MIN_POTENTIAL_MOVES = 4; // min # of potential moves in vector before considering looking on the next row
-    private int BLOCK_SIZE = 7;
+    private int BUILD_ROAD_PENALTY = 5; // penalty for each additional road cell built
+    private int BUILD_PARK_PENALTY = 5; // penalty for each additional water/park built
+    private int ROAD_ADJ_PENALTY = 2; // penalty for each adjacent road cell
+    private int PERIMETER_PENALTY = 5; // penalty for each cell on the perimeter
+    private int MIN_POTENTIAL_MOVES = 20; // min # of potential moves in vector before considering looking on the next row
+    private int ROAD_ADJ_POND_PENALTY = 5; // penalty for each built road cell next to park/pond
+    
+    // used for evaluating vector of parks/ponds to be built
+    private int PARKPOND_PACKING_BONUS = 10; // bonus for each adjacent empty cell
+
+    // used for scoring factories only
+    private int POND_PENALTY = 5; // penalty for adjacent ponds/parks
+    private int FACTORY_BONUS = 5; // bonus for adjacent factory cells
+    
     private Set<Cell> road_cells;
     private Random gen = new Random();
-    
+    private int resHighestI = 0;
 
     /* (Move, score) tuple
      */
@@ -42,6 +51,26 @@ public class Player implements pentos.sim.Player {
         }
     }
 
+    /* (Park/Pond, score) tuple
+     */
+    class ScoredParkPond implements Comparable<ScoredParkPond> {
+        public Set<Cell> parkPond;
+        public int score;
+
+        public ScoredParkPond(Set<Cell> parkPond, int score) {
+            this.parkPond = parkPond;
+            this.score = score;
+        }
+
+        public boolean equals(ScoredParkPond p) {
+            return parkPond == p.parkPond && score == p.score;
+        }
+
+        public int compareTo(ScoredParkPond p) {
+            return score - p.score;
+        }
+    }
+    
     public void init() {
         road_cells = new HashSet<Cell>();
     }
@@ -79,38 +108,38 @@ public class Player implements pentos.sim.Player {
         return null;
     }
 
-
     /* Returns number of adjacent empty cells (how well packed the building is)
-       RESIDENCES: takes into account road, water, park cells about to be built
+       RESIDENCES: adjacent roads count as being "empty"
+       FACTORIES: adjacent roads count towards packing
      */
     private int getPackingFactor(Building b, Cell position, Land land,
                                 Set<Cell> markedForConstruction) {
         Set<Cell> emptyNeighbors = new HashSet<Cell>();
         Set<Cell> absBuildingCells = getAbsCells(b, position);
+        markedForConstruction.addAll(absBuildingCells);
+        Set<Cell> neighbors = new HashSet<Cell>();
+        for (Cell c : absBuildingCells) {
+            Cell[] cNeighbors = c.neighbors();
+            for (Cell n : cNeighbors) {
+                neighbors.add(n);
+            }
+        }
 
-        for (Cell abs : absBuildingCells) {
-            Cell[] absNeighbors = abs.neighbors();
-            for (Cell n : absNeighbors) {
-                if (land.unoccupied(n)) {
-                    // check if that cell on the land WOULD be occupied by this building
-                    boolean occupied = false;
-                    for (Cell d : absBuildingCells) {
-                        if (d.equals(abs))
-                            continue; // neighbor is next to the cell we used to get this neighbor, ignore!
-                        if (n.equals(d)) {
-                            occupied = true;
-                        }
-                    }
-                    
-                    if (occupied == false) {
-                        // last check: if n is NOT one of the road/water/park to be constructed
-                        if (!markedForConstruction.contains(n)) {
-                            emptyNeighbors.add(n);
-                        }
-                    }
-                } // end if land.unoccupied(n)
-            } // end for(Cell n : absNeighbors)
-        } // end for(Cell abs : absBuildingCells)
+        for (Cell c : neighbors) {
+            if (markedForConstruction.contains(c)) {
+                continue;
+            }
+            if (b.type == Building.Type.RESIDENCE) {
+                if (land.getCellType(c.i, c.j) == Cell.Type.ROAD || land.unoccupied(c)) {
+                    emptyNeighbors.add(c);
+                }
+            }
+            else {
+                if (land.unoccupied(c)) {
+                    emptyNeighbors.add(c);
+                }
+            }
+        }
         return emptyNeighbors.size() * PACKING_FACTOR_MULTIPLE;
     }
 
@@ -195,133 +224,31 @@ public class Player implements pentos.sim.Player {
         return adjRoadCells.size();
     }
 
-    
-    /*
-      Checks if cell is occupied currently or will be by the building about to be placed
-      c is an ABSOLUTE POSITION on the land
+    /* Counts how many adjacent cells of a type (for factory use only - 
+       so not counting cells marked for construction)
      */
-    public boolean willBeUnoccupied(Cell c, Building b, Cell buildingPos, Land land) {
-        if (!land.unoccupied(c)) {
-            return false; // it IS occupied
-        }
+    public int numAdjType(Building b, Cell buildingPos, Land land, Cell.Type type) {
+        Set<Cell> adjacent = new HashSet<Cell>();
+        Set<Cell> absBuildingCells = getAbsCells(b, buildingPos);
+        Set<Cell> neighbors = new HashSet<Cell>();
 
-        for (Cell buildingCell : b) {
-            Cell buildingCellAbs = new Cell(buildingCell.i + buildingPos.i, buildingCell.j + buildingPos.j);
-            if (buildingCellAbs.equals(c)) {
-                return false; // it WILL BE occupied by the building about to be placed
+        for (Cell c : absBuildingCells) {
+            Cell[] cNeighbors = c.neighbors();
+            for (Cell n : cNeighbors) {
+                neighbors.add(n);
             }
         }
 
-        // This is a cell that will eventually be occupied by a road
-        if ((c.i + 1) % (BLOCK_SIZE + 1) == 0)
-            return false;
-
-        return true; // will be unoccupied
+        for (Cell c : neighbors) {
+            if (land.getCellType(c.i, c.j) == type) {
+                adjacent.add(c);
+            }
+        }
+        return adjacent.size();
     }
 
     public Double getDist(Cell a, Cell b) {
         return Math.hypot(a.i - b.i, a.j - b.j);
-    }
-
-    /*
-      Adds either a park or a field to a Move - we use the word "development" to refer to either
-      of these entities.
-     */
-    public Move buildWithDevelopment(Cell buildingPos, Building request, int rotation,
-                                     Set<Cell> roadCells, Land land) {
-        // Create a set that holds the cells that the building will occupy
-        Set<Cell> shiftedCells = new HashSet<Cell>();
-        Building b = request.rotations()[rotation];
-        for (Cell cell : b) {
-            shiftedCells.add(new Cell(cell.i + buildingPos.i, cell.j + buildingPos.j));
-        }
-
-        // Create a set of cells for the new development
-        Set<Cell> developmentCells = new HashSet<Cell>();
-
-        // TODO: Right now we're just selecting the last valid candidate development and building
-        // it. We probably want to store each valid candidate in a list and score them so that
-        // we can choose the best candidate instead.
-        for (Cell cell : shiftedCells) {
-            Cell[] adj = cell.neighbors();
-            // Loop through all cells neighboring the building
-            for (Cell neighbor : adj) {
-                int i = neighbor.i;
-                int j = neighbor.j;
-
-                // Attempt to construct a horizontal development
-                Set<Cell> candidateDevelopment = new HashSet<Cell>();
-                boolean candidateIsValid = true;
-
-                if (j+3 >= land.side)
-                    candidateIsValid = false;
-
-                for (int dj = 0; candidateIsValid && dj < 4; dj++) {
-                    // Starting from a cell that neighbors a building, build to the right
-                    Cell candidateCell = new Cell(i+dj, j);
-                    // If the current cell is being used for something else, this candidate
-                    // is invalid
-                    if (!willBeUnoccupied(candidateCell, b, buildingPos, land) ||
-                        roadCells.contains(candidateCell)) {
-                        candidateIsValid = false;
-                        break;
-                    }
-                    candidateDevelopment.add(candidateCell);
-                }
-
-                // If we couldn't construct a development by building rightward, build leftward
-                // instead
-                if (!candidateIsValid) {
-                    candidateIsValid = true;
-                    candidateDevelopment = new HashSet<Cell>();
-
-                    if (j-3 < 0)
-                        candidateIsValid = false;
-
-                    for (int dj = 0; candidateIsValid && dj < 4; dj++) {
-                        // Build to the left
-                        Cell candidateCell = new Cell(i, j-dj);
-
-                        // If the current cell is being used for something else, this candidate
-                        // is invalid
-                        if (!willBeUnoccupied(candidateCell, b, buildingPos, land) ||
-                            roadCells.contains(candidateCell)) {
-                            candidateIsValid = false;
-                            break;
-                        }
-                        candidateDevelopment.add(candidateCell);
-                    }
-                }
-
-                // If we found a valid candidate this round, mark it as the development to be
-                // built
-                if (candidateIsValid) {
-                    developmentCells = candidateDevelopment;
-                }
-            }
-        }
-
-        // If the building doesn't have a pond or field, choose one randomly and build it
-        return new Move(true, request, buildingPos, rotation, roadCells,
-                        new HashSet<Cell>(), developmentCells);
-        /*if (!hasPond && !hasField) {
-            int choice = gen.nextInt(2);
-            if (choice == 0) {
-                return new Move(true, request, buildingPos, rotation, roadCells,
-                                new HashSet<Cell>(), developmentCells);
-            } else {
-                return new Move(true, request, buildingPos, rotation, roadCells, developmentCells,
-                                new HashSet<Cell>());
-            }
-        } else if (hasPond) {
-            // Build a field if there is a pond
-            return new Move(true, request, buildingPos, rotation, roadCells, new HashSet<Cell>(),
-                            developmentCells);
-        } else {
-            // Build a pond if there is a field
-            return new Move(true, request, buildingPos, rotation, roadCells, developmentCells,
-                            new HashSet<Cell>());
-        }*/
     }
 
     /* Checks if building to be placed will be connected to a road
@@ -339,9 +266,9 @@ public class Player implements pentos.sim.Player {
                     return true;
                 if (roadConstruction.contains(n))
                     return true;
-                if (isPerimeter(land, n))
-                    return true;
             }
+            if (onPerimeter(land, abs))
+                return true;
         }
         return false;
     }
@@ -354,148 +281,233 @@ public class Player implements pentos.sim.Player {
         }
         return absBuildingCells;
     }
-    
-    /* TODO
+
+    /* Takes a candidate park or pond and scores it considering the move that
+       it will be added to. type needs to be Cell.Type.WATER or Cell.Type.PARK
+       Score = number of empty cells around the park/pond
+       So the more empty neighbors, the higher the score
      */
-    private Set<Cell> buildRoad(Set<Cell> building, Land land) {
-        return null;
-    }
-        
-    /* TODO: fill out
-     */
-    private Move buildParksPonds(Move move, Land land) {
-        // Create a set that holds the cells that the building will occupy
-        Set<Cell> shiftedCells = new HashSet<Cell>();
-        Building b = move.request.rotations()[move.rotation];
-        for (Cell cell : b) {
-            shiftedCells.add(new Cell(cell.i + move.location.i, cell.j + move.location.j));
+    private int scoreParkOrPond(Move move, Land land,
+                                Set<Cell> candidate, Cell.Type type) {
+        Building request = move.request;
+        Building b = request.rotations()[move.rotation];
+        Cell buildingPos = move.location;
+        Set<Cell> absBuildingCells = getAbsCells(b, buildingPos);
+        Set<Cell> road = move.road;
+        Set<Cell> water = move.water;
+        Set<Cell> park = move.park;
+        Set<Cell> markedForConstruction = new HashSet<Cell>();
+        Set<Cell> cellsToScore = new HashSet<Cell>();
+        markedForConstruction.addAll(absBuildingCells);
+        if (type == Cell.Type.PARK) {
+            markedForConstruction.addAll(water);
+            cellsToScore = park;
+        }
+        else {
+            markedForConstruction.addAll(park);
+            cellsToScore = water;
         }
 
-        // Create a set of cells for the new development
-        Set<Cell> developmentCells = new HashSet<Cell>();
+        Set<Cell> emptyNeighbors = new HashSet<Cell>();
+        Set<Cell> roadNeighbors = new HashSet<Cell>();
+        for (Cell c : cellsToScore) {
+            Cell[] cNeighbors = c.neighbors();
+            for (Cell n : cNeighbors) {
+                if (land.unoccupied(n) && !markedForConstruction.contains(n)) {
+                    emptyNeighbors.add(n);
+                }
+                if (land.getCellType(n) == Cell.Type.ROAD || road.contains(n)) {
+                    roadNeighbors.add(n);
+                }
+            }
+        }
 
-        // TODO: Right now we're just selecting the last valid candidate development and building
-        // it. We probably want to store each valid candidate in a list and score them so that
-        // we can choose the best candidate instead.
-        for (Cell cell : shiftedCells) {
-            Cell[] adj = cell.neighbors();
-            // Loop through all cells neighboring the building
-            for (Cell neighbor : adj) {
-                int i = neighbor.i;
-                int j = neighbor.j;
+        int score = emptyNeighbors.size() * PARKPOND_PACKING_BONUS;
+        score -= roadNeighbors.size() * ROAD_ADJ_POND_PENALTY;
+        return score;
+    }
 
-                if (i != move.location.i)
-                    continue;
+    /* returns a set of possible horizontal and vertical parks/ponds (size 4)
+       given a move. For the given type, the move MUST have no cells of that type
+       under construction
+     */
+    private Set<Set<Cell>> getHorizVertPermuts(Move move, Land land, Cell.Type type) {
+        if (type != Cell.Type.PARK && type != Cell.Type.WATER) {
+            return new HashSet<Set<Cell>>();
+        }
+        Set<Set<Cell>> candidates = new HashSet<Set<Cell>>();
+        Building request = move.request;
+        Building b = request.rotations()[move.rotation];
+        Cell buildingPos = move.location;
+        Set<Cell> absBuildingCells = getAbsCells(b, buildingPos);
+        Set<Cell> road = move.road;
+        Set<Cell> park = move.park;
+        Set<Cell> water = move.water;
+        Set<Cell> markedForConstruction = new HashSet<Cell>();
+        markedForConstruction.addAll(road);
+        markedForConstruction.addAll(absBuildingCells);
+        if (type == Cell.Type.PARK) {
+            markedForConstruction.addAll(water);
+        }
+        else {
+            markedForConstruction.addAll(park);
+        }
 
-                // Attempt to construct a horizontal development
-                Set<Cell> candidateDevelopment = new HashSet<Cell>();
-                boolean candidateIsValid = true;
+        // get empty neighbors to building
+        Set<Cell> neighbors = new HashSet<Cell>();
+        for (Cell c : absBuildingCells) {
+            Cell[] cNeighbors = c.neighbors();
+            for (Cell n : cNeighbors) {
+                if (land.unoccupied(n) && !markedForConstruction.contains(n)) {
+                    neighbors.add(n);
+                }
+            }
+        }
 
-                if (j+3 >= land.side)
-                    candidateIsValid = false;
-
-                for (int dj = 0; candidateIsValid && dj < 4; dj++) {
-                    // Starting from a cell that neighbors a building, build to the right
-                    Cell candidateCell = new Cell(i+dj, j);
-                    // If the current cell is being used for something else, this candidate
-                    // is invalid
-                    if (!willBeUnoccupied(candidateCell, b, move.location, land) ||
-                        move.road.contains(candidateCell)) {
-                        candidateIsValid = false;
+        // for each empty neighbor, try to build horizontal and vertical park/pond
+        // with length of 4
+        for (Cell c : neighbors) {
+            // search all 4 directions
+            for (int dir = 0; dir < 4; dir++) {
+                Set<Cell> candidate = new HashSet<Cell>();
+                int length = 4;
+                int i = c.i;
+                int j = c.j;
+                while (length > 0) {
+                    if (!land.unoccupied(i, j)) {
                         break;
                     }
-                    candidateDevelopment.add(candidateCell);
-                }
-
-                // If we couldn't construct a development by building rightward, build leftward
-                // instead
-                if (!candidateIsValid) {
-                    candidateIsValid = true;
-                    candidateDevelopment = new HashSet<Cell>();
-
-                    if (j-3 < 0)
-                        candidateIsValid = false;
-
-                    for (int dj = 0; candidateIsValid && dj < 4; dj++) {
-                        // Build to the left
-                        Cell candidateCell = new Cell(i, j-dj);
-
-                        // If the current cell is being used for something else, this candidate
-                        // is invalid
-                        if (!willBeUnoccupied(candidateCell, b, move.location, land) ||
-                            move.road.contains(candidateCell)) {
-                            candidateIsValid = false;
-                            break;
-                        }
-                        candidateDevelopment.add(candidateCell);
+                    Cell curr = new Cell(i, j);
+                    if (markedForConstruction.contains(curr)) {
+                        break;
                     }
-                }
-
-                // If we couldn't construct a development by building rightward, build leftward
-                // instead
-                if (!candidateIsValid) {
-                    candidateIsValid = true;
-                    candidateDevelopment = new HashSet<Cell>();
-
-                    if (j-3 < 0)
-                        candidateIsValid = false;
-
-                    for (int dj = 0; candidateIsValid && dj < 4; dj++) {
-                        // Build to the left
-                        Cell candidateCell = new Cell(i, j+dj);
-
-                        // If the current cell is being used for something else, this candidate
-                        // is invalid
-                        if (!willBeUnoccupied(candidateCell, b, move.location, land) ||
-                            move.road.contains(candidateCell)) {
-                            candidateIsValid = false;
-                            break;
-                        }
-                        candidateDevelopment.add(candidateCell);
+                    candidate.add(curr);
+                    length--;
+                    if (dir == 0) {
+                        i--; // grow north
+                    } else if (dir == 1) {
+                        j++; // east
+                    } else if (dir == 2) {
+                        i++; // south
+                    } else {
+                        j--; // west
                     }
+                } // end while length > 0
+                if (candidate.size() == 4) {
+                    candidates.add(candidate);
                 }
+            } // end for each direction
+        } // end for each neighbor cell
 
-                // If we found a valid candidate this round, mark it as the development to be
-                // built
-                if (candidateIsValid) {
-                    developmentCells = candidateDevelopment;
-                }
-            }
-        }
-
-        boolean hasPond = adjacentPond(b, move.location, land, new HashSet<Cell>());
-        boolean hasField = adjacentField(b, move.location, land, new HashSet<Cell>());
-
-        if (!hasPond && !hasField) {
-            int choice = gen.nextInt(2);
-            if (choice == 0) {
-                return new Move(true, move.request, move.location, move.rotation, move.road,
-                                new HashSet<Cell>(), developmentCells);
-            } else {
-                return new Move(true, move.request, move.location, move.rotation, move.road, developmentCells,
-                                new HashSet<Cell>());
-            }
-        } else if (hasPond) {
-            // Build a field if there is a pond
-            return new Move(true, move.request, move.location, move.rotation, move.road, new HashSet<Cell>(),
-                            developmentCells);
-        } else {
-            // Build a pond if there is a field
-            return new Move(true, move.request, move.location, move.rotation, move.road, developmentCells,
-                            new HashSet<Cell>());
-        }
+        return candidates;
     }
 
-    /* TODO: how many cells get cut off from network?
+    /* build parks and ponds to a move that currently has none to be built
      */
+    private Move buildParksPonds(Move move, Land land) {
+        Building request = move.request;
+        Building b = request.rotations()[move.rotation];
+        Cell buildingPos = move.location;
+        Set<Cell> absBuildingCells = getAbsCells(b, buildingPos);
+        Set<Cell> road = move.road;
+        Set<Cell> markedForConstruction = new HashSet<Cell>();
+        markedForConstruction.addAll(road);
+
+        // make sure move doesnt have any water or park to be built
+        Set<Cell> park = new HashSet<Cell>();
+        Set<Cell> water = new HashSet<Cell>();
+        move.park = park;
+        move.water = water;
+        
+        boolean hasField = false;
+        boolean hasPond = false;
+        hasField = adjacentField(b, buildingPos, land, new HashSet<Cell>());
+        hasPond = adjacentPond(b, buildingPos, land, new HashSet<Cell>());
+
+        // if not placed next to a field, try to connect to one or build one
+        if (!hasField) {
+            Set<Cell> connectPark = connectTo(b, buildingPos, land,
+                                              markedForConstruction, Cell.Type.PARK, 3);
+            if (connectPark.size() > 0) {
+                park.addAll(connectPark);
+            }
+            else {
+                // generate candidate parks
+                Set<Set<Cell>> candidateParks = getHorizVertPermuts(move, land, Cell.Type.PARK);
+
+                // score the candidates
+                Iterator<Set<Cell>> candParks_it = candidateParks.iterator();
+                Vector<ScoredParkPond> scoredParks = new Vector<ScoredParkPond>();
+                while (candParks_it.hasNext()) {
+                    Set<Cell> candidate = candParks_it.next();
+                    int score = scoreParkOrPond(move, land,
+                                                candidate, Cell.Type.PARK);
+                    scoredParks.add(new ScoredParkPond(candidate, score));
+                }
+
+                // sort the scored parks and get the highest
+                if (scoredParks.size() == 0) {
+                    park = new HashSet<Cell>();
+                }
+                else {
+                    Collections.sort(scoredParks);
+                    ScoredParkPond bestScoredPark = scoredParks.lastElement();
+                    park = bestScoredPark.parkPond;
+                }
+            } // end else build a new field
+        } // end if !hasField
+
+        // add newly built (or none) park cells to be marked under construction
+        markedForConstruction.addAll(park);
+
+        // update the move with park cells
+        move.park = park;
+        
+        // if not placed next to a pond, try to connect to one or build one
+        if (!hasPond) {
+            Set<Cell> connectWater = connectTo(b, buildingPos, land,
+                                               markedForConstruction, Cell.Type.WATER, 3);
+            if (connectWater.size() > 0) {
+                water.addAll(connectWater);
+            }
+            else {
+                // generate candidate ponds
+                Set<Set<Cell>> candidatePonds = getHorizVertPermuts(move, land, Cell.Type.WATER);
+
+                // score the candidates
+                Iterator<Set<Cell>> candPonds_it = candidatePonds.iterator();
+                Vector<ScoredParkPond> scoredPonds = new Vector<ScoredParkPond>();
+                while (candPonds_it.hasNext()) {
+                    Set<Cell> candidate = candPonds_it.next();
+                    int score = scoreParkOrPond(move, land, candidate, Cell.Type.WATER);
+                    scoredPonds.add(new ScoredParkPond(candidate, score));
+                }
+
+                // sort the scored ponds and get the highest
+                if (scoredPonds.size() == 0) {
+                    water = new HashSet<Cell>();
+                }
+                else {
+                    Collections.sort(scoredPonds);
+                    ScoredParkPond bestScoredPond = scoredPonds.lastElement();
+                    water = bestScoredPond.parkPond;
+                }
+            } // end else build a new pond
+        } // end if !hasPond
+
+        // update move with water cells
+        move.water = water;
+        return move;
+    }
     
-    /* TODO: score differently for factories vs residences
+    /* Scores moves
      */
     private int scoreMove(Move move, Land land) {
         int score = 0;
         Building request = move.request;
         Building b = request.rotations()[move.rotation];
         Cell buildingPos = move.location;
+        Set<Cell> absBuildingCells = getAbsCells(b, buildingPos);
         Set<Cell> road = move.road;
         Set<Cell> water = move.water;
         Set<Cell> park = move.park;
@@ -505,21 +517,55 @@ public class Player implements pentos.sim.Player {
         markedForConstruction.addAll(park);
         
         score = b.size() * BASE_BUILDING_SCORE;
-        score -= getPackingFactor(b, buildingPos, land, markedForConstruction);
-
-        if (adjacentPond(b, buildingPos, land, water)) {
-            score += POND_BONUS_SCORE;
+        if (request.type == Building.Type.RESIDENCE) {
+            score -= getPackingFactor(b, buildingPos, land, markedForConstruction);
+        }
+        else {
+            markedForConstruction.addAll(road);
+            score -= getPackingFactor(b, buildingPos, land, markedForConstruction);            
         }
 
-        if (adjacentField(b, buildingPos, land, park)) {
-            score += FIELD_BONUS_SCORE;
+        // residences: bonus to parks/ponds, subject to penalty per additional cell built
+        if (request.type == Building.Type.RESIDENCE) {
+            if (adjacentPond(b, buildingPos, land, water)) {
+                score += POND_BONUS_SCORE;
+            }
+
+            if (adjacentField(b, buildingPos, land, park)) {
+                score += FIELD_BONUS_SCORE;
+            }
+            score -= (water.size() + park.size()) * BUILD_PARK_PENALTY;
         }
 
-        score -= (water.size() + park.size()) * BUILD_PARK_PENALTY;
-        score -= road.size() * BUILD_ROAD_PENALTY;
-
-        score -= numAdjRoad(b, buildingPos, land, road) * ROAD_ADJ_PENALTY;
+        // factories: penalty for adjacency to parks/ponds, bonus for factory adjacency
+        if (request.type == Building.Type.FACTORY) {
+            score -= numAdjType(b, buildingPos, land, Cell.Type.WATER) * POND_PENALTY;
+            score -= numAdjType(b, buildingPos, land, Cell.Type.PARK) * POND_PENALTY;
+            score += numAdjType(b, buildingPos, land, Cell.Type.FACTORY) * FACTORY_BONUS;
+        }
         
+        score -= road.size() * BUILD_ROAD_PENALTY;
+        score -= numAdjRoad(b, buildingPos, land, road) * ROAD_ADJ_PENALTY;
+
+        int cellsOnPerimeter = countPerimeterCells(land, absBuildingCells);
+        cellsOnPerimeter += countPerimeterCells(land, road);
+        cellsOnPerimeter += countPerimeterCells(land, water);
+        cellsOnPerimeter += countPerimeterCells(land, park);
+        score -= cellsOnPerimeter * PERIMETER_PENALTY;
+
+        // check how many built road cells are next to park/pond
+        int roadCellsAdjParkPond = countRoadAdjParkPond(road, land, water, park);
+        score -= roadCellsAdjParkPond * ROAD_ADJ_POND_PENALTY;
+        
+        // basic final check to heavily penalize cutting off large amounts of free cells
+        int numCellsCutOff = countCellsCutOff(move, land);
+        if (numCellsCutOff > 20) {
+            score -= Math.pow(2, 20);
+        }
+        else {
+            score -= Math.pow(2, numCellsCutOff);
+        }
+
         return score;
     }
     
@@ -557,43 +603,36 @@ public class Player implements pentos.sim.Player {
                     potentialMoves.add(sMovePlus);
                 }
             }
-            //TODO: call build road algo and call scoring algo
-
-            //TODO: build parks/ponds and call scoring
-
         } // end building rotations for loop
-
-    } 
+    } // end evaluateMovesAt
     
     /* For each request, search entire board and evaluate moves at each cell
        Add potential scored moves to a vector, and choose the best option to play
        Revert to default player if no options found
      */
     public Move play(Building request, Land land) {
-        System.out.println("Request type: " + request.type + " " + request.toString());
+        //System.out.println("Request type: " + request.type + " " + request.toString());
         Vector<ScoredMove> potentialMoves = new Vector<ScoredMove>();
+        Move nextMove = null;
         
         if (request.type == Building.Type.RESIDENCE) {
             for (int i = 0; i < land.side; i++) {
                 for (int j = 0; j < land.side; j++) {
                     evaluateMovesAt(i, j, request, land, potentialMoves);  
                 }
-                System.out.println("Potential moves: " + potentialMoves.size());
-                if (potentialMoves.size() >= MIN_POTENTIAL_MOVES) {
-                    System.out.println("Sufficient moves found at i = " + i);
+
+                if (i >= resHighestI && potentialMoves.size() >= MIN_POTENTIAL_MOVES) {
                     break; // searched thru constrained space and found enough moves
                 }
             }
-
+            
         }
-        else {
+        else { // FACTORIES
             for (int i = land.side-1; i >= 0; i--) {
                 for (int j = land.side-1; j >= 0; j--) {
                     evaluateMovesAt(i, j, request, land, potentialMoves);  
                 }
-                System.out.println("Potential moves: " + potentialMoves.size());
                 if (potentialMoves.size() >= MIN_POTENTIAL_MOVES) {
-                    System.out.println("Sufficient moves found at i = " + i);
                     break; // searched thru constrained space and found enough moves
                 }
             }
@@ -606,41 +645,261 @@ public class Player implements pentos.sim.Player {
                     for (int ri = 0 ; ri < request.rotations().length ; ri++) {
                         Move chosen = getMoveIfValid(request, land, i, j, ri);
                         if (chosen != null) {
-                            return chosen;
+                            nextMove = chosen;
                         }
                     }
                 }
             }
-            return new Move(false); // default player failed to find a spot
+            nextMove = new Move(false); // default player failed to find a spot
         } else {
             // get the move with highest score from Vector potentialMoves
             Collections.sort(potentialMoves);
+            //System.out.println("Potential moves: " + potentialMoves.size());
             ScoredMove bestScoredMove = potentialMoves.lastElement();
             Move bestMove = bestScoredMove.move;
             Building b = bestMove.request.rotations()[bestMove.rotation];
             Set<Cell> absBuildingCells = getAbsCells(b, bestMove.location);
             road_cells.addAll(bestMove.road);
-
-            return bestMove;
+            nextMove = bestMove;
         }
 
+        // if residence, update highest i that residences have reached
+        if (nextMove.accept && request.type == Building.Type.RESIDENCE) {
+            int moveI = nextMove.location.i;
+            resHighestI = Math.max(resHighestI, moveI);
+            resHighestI = Math.min(resHighestI, land.side-1);
+        }
+
+        return nextMove;
     } // end play()
+
+    /* For a given set of cells, counts how many are on the perimeter
+     */
+    private int countPerimeterCells(Land land, Set<Cell> cells) {
+        int count = 0;
+        for (Cell c : cells) {
+            if (onPerimeter(land, c)) {
+                count++;
+            }
+        }
+        return count;
+    }
     
-    private boolean isPerimeter(Land land, Cell cell) {
+    /* Returns if a cell is on perimeter or not
+     */
+    private boolean onPerimeter(Land land, Cell cell) {
         int i = cell.i;
         int j = cell.j;
+        return (i <= 0 || j <= 0 || i >= land.side-1 || j >= land.side-1);
+    }
 
-        for (int di = -1; di <= 1; di++) {
-            for (int dj = -1; dj <= 1; dj++) {
-                if (di != 0 && dj != 0 && !land.unoccupied(i+di, j+dj)) {
-                    return true;
+    /* Returns if a group of cells has a road connection (either existing road
+       or one marked for construction)
+     */
+    private boolean isConnectedToRoad(Set<Cell> group, Land land,
+                                      Set<Cell> roadMarkedForConstruction) {
+        Set<Cell> neighbors = new HashSet<Cell>();
+        for (Cell c : group) {
+            Cell[] cNeighbors = c.neighbors();
+            for (Cell n : cNeighbors) {
+                neighbors.add(n);
+            }
+            if (onPerimeter(land, c)) {
+                return true;
+            }
+        }
+
+        for (Cell c : neighbors) {
+            if (land.getCellType(c.i, c.j) == Cell.Type.ROAD ||
+                roadMarkedForConstruction.contains(c)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /* Returns set of empty cells that are connected to this empty cell
+     */
+    private Set<Cell> getConnectedEmptyCells(Cell c, Land land,
+                                             Set<Cell> markedForConstruction) {
+        Set<Cell> emptyCellGroup = new HashSet<Cell>();
+        Set<Cell> visited = new HashSet<Cell>();
+        Stack<Cell> stack = new Stack<Cell>();
+        c.previous = c;
+        stack.push(c);
+        visited.add(c);
+
+        while (!stack.empty()) {
+            Cell curr = stack.pop();
+            emptyCellGroup.add(curr);
+            visited.add(curr);
+            Cell[] neighbors = curr.neighbors();
+            for (Cell n : neighbors) {
+                if (visited.contains(n)) {
+                    continue;
+                }
+
+                if (land.unoccupied(n) && !markedForConstruction.contains(n)) {
+                    stack.push(n);
+                }
+            }
+        } // end while !stack.empty()
+        return emptyCellGroup;
+    }
+    
+    /* Counts how many cells are cut off from road connection as a result of
+       given move
+     */
+    private int countCellsCutOff(Move move, Land land) {
+        Building request = move.request;
+        Building b = request.rotations()[move.rotation];
+        Cell buildingPos = move.location;
+        Set<Cell> absBuildingCells = getAbsCells(b, buildingPos);
+        Set<Cell> road = move.road;
+        Set<Cell> water = move.water;
+        Set<Cell> park = move.park;
+        Set<Cell> markedForConstruction = new HashSet<Cell>();
+        markedForConstruction.addAll(absBuildingCells);
+        markedForConstruction.addAll(road);
+        markedForConstruction.addAll(water);
+        markedForConstruction.addAll(park);
+        Set<Cell> neighbors = new HashSet<Cell>();
+
+        for (Cell c : markedForConstruction) {
+            Cell[] cNeighbors = c.neighbors();
+            for (Cell n : cNeighbors) {
+                if (!markedForConstruction.contains(n)) {
+                    neighbors.add(n);
                 }
             }
         }
 
-        return false;
+        // for each empty neighbor, get the group of empty cells connected to it
+        Set<Set<Cell>> emptyCellGroups = new HashSet<Set<Cell>>();
+        Set<Set<Cell>> unconnectedGroups = new HashSet<Set<Cell>>();
+        for (Cell c : neighbors) {
+            if (land.unoccupied(c) && !markedForConstruction.contains(c)) {
+                Set<Cell> group = getConnectedEmptyCells(c, land, markedForConstruction);
+                emptyCellGroups.add(group);
+            }
+        }
+
+        // for each empty cell group, check if it's connected
+        Iterator<Set<Cell>> group_it = emptyCellGroups.iterator();
+        while (group_it.hasNext()) {
+            Set<Cell> group = group_it.next();
+            if (!isConnectedToRoad(group, land, road)) {
+                unconnectedGroups.add(group);
+            }
+        }
+
+        // for each unconnected empty cell group, sum up the cells
+        group_it = unconnectedGroups.iterator();
+        int unconnectedCount = 0;
+        while (group_it.hasNext()) {
+            Set<Cell> group = group_it.next();
+            unconnectedCount += group.size();
+        }
+        
+        return unconnectedCount;
     }
 
+    int countRoadAdjParkPond(Set<Cell> road, Land land, Set<Cell> water, Set<Cell> park) {
+        Set<Cell> roadCellsAdj = new HashSet<Cell>();
+        Set<Cell> neighbors = new HashSet<Cell>();
+
+        for (Cell r : road) {
+            Cell[] rNeighbors = r.neighbors();
+            for (Cell n : rNeighbors) {
+                neighbors.add(n);
+            }
+        }
+
+        for (Cell n : neighbors) {
+            if (land.getCellType(n) == Cell.Type.WATER ||
+                land.getCellType(n) == Cell.Type.PARK ||
+                water.contains(n) || park.contains(n)) {
+                roadCellsAdj.add(n);
+            }
+        }
+
+        return roadCellsAdj.size();
+    }
+    
+    /* Searches for a cell of specified type that is up to specified distance 
+       away from building. Returns set of cells that satisfies this, or an empty 
+       set if none found
+    */
+    private Set<Cell> connectTo(Building b, Cell buildingPos, Land land,
+                                Set<Cell> markedForConstruction, Cell.Type type,
+                                int maxDistance) {
+        // only works for parks and fields
+        if (type != Cell.Type.WATER && type != Cell.Type.PARK) {
+            return new HashSet<Cell>();
+        }
+ 
+        Set<Cell> absBuildingCells = getAbsCells(b, buildingPos);
+        Queue<Cell> queue = new LinkedList<Cell>();
+         
+        for (Cell c : absBuildingCells) {
+            Cell[] neighbors = c.neighbors();
+            for (Cell n : neighbors) {
+                if (land.unoccupied(n) && !markedForConstruction.contains(n)) {
+                    queue.add(n);
+                }
+            }
+        }
+ 
+        int distance = maxDistance;
+        int currIterSize = queue.size(); // keep track of how many cells in current search depth
+        Set<Cell> connectingCells = new HashSet<Cell>();
+        Set<Cell> visited = new HashSet<Cell>();
+ 
+        while (queue.size() > 0) {
+            if (currIterSize == 0) {
+                // if done with current search depth, get size of next search depth and increase
+                // search depth counter
+                currIterSize = queue.size();
+                distance--;
+                if (distance <= 0) {
+                    break;
+                }
+            }
+ 
+            Cell curr = queue.remove();
+            visited.add(curr);
+            Cell[] neighbors = curr.neighbors();
+            Cell found = null;
+            for (Cell c : neighbors) {
+                if (type == Cell.Type.WATER && land.isPond(c)) {
+                    found = curr;
+                    break;
+                }
+ 
+                if (type == Cell.Type.PARK && land.isField(c)) {
+                    found = curr;
+                    break;
+                }
+ 
+                if ( land.unoccupied(c) && !absBuildingCells.contains(c)
+                     && !markedForConstruction.contains(c) && !visited.contains(c) ) {
+                    Cell next = new Cell(c.i, c.j, curr);
+                    queue.add(next);
+                }
+            }
+ 
+            if (found != null) {
+                while (found != null) {
+                    connectingCells.add(found);
+                    found = found.previous;
+                }
+                break;
+            }
+            currIterSize--;
+        } // end while queue.size() > 0
+        return connectingCells;
+    } // end connectTo()
 
     private Set<Cell> findShortestRoad(Set<Cell> b, Land land) {
         Set<Cell> output = new HashSet<Cell>();

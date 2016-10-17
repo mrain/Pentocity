@@ -3,33 +3,34 @@ package pentos.g4;
 import java.util.*;
 import pentos.sim.Building;
 import pentos.sim.Cell;
-
+/*
+Random 11 time for residence, then put all cross
+11 time 5*5 factory, then random size of square factory
+*/
 public class Sequencer implements pentos.sim.Sequencer {
 
     private Random gen;
     private int turn = 0;
-    private double ratio = 0; // ratio of residences to total number of buildings
+    private double ratio = 0.5; // ratio of residences to total number of buildings
     private int factory_count = 0;
     private int residence_count = 0;
 
     public void init(Long seed) {
 	if (seed != null) 
-	    gen = new Random(10L);
+	    gen = new Random(seed.longValue());
 	else
 	    gen = new Random();
     }
     
     public Building next() {
 		if (gen.nextDouble() > ratio){
-			if(factory_count  < 11){
-				factory_count++;
+			if(factory_count < 11){
+				factory_count ++;
 				return randomFactory(5);
 			}
 			else{
-				return randomFactory(1);	
+				return randomFactory(gen.nextInt(5)+1);	
 			}
-			//factory_count++;
-			//return randomFactory(factory_count%5+1);
 		}
 		else{
 			if(residence_count < 11){
@@ -42,17 +43,6 @@ public class Sequencer implements pentos.sim.Sequencer {
 		    
 		}
     }
-
-
-   	private Building straight() { // random walk of length 5
-		Set<Cell> residence = new HashSet<Cell>();
-		residence.add(new Cell(0,0));
-		residence.add(new Cell(0,1));
-		residence.add(new Cell(0,2));
-		residence.add(new Cell(0,3));
-		residence.add(new Cell(0,4));
-		return new Building(residence.toArray(new Cell[residence.size()]), Building.Type.RESIDENCE);
-    } 
 
     private Building randomFactory(int side) { // random rectangle
 		Set<Cell> factory = new HashSet<Cell>();

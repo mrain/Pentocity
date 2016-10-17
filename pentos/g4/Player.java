@@ -9,11 +9,12 @@ import pentos.sim.Land;
 import pentos.sim.Move;
 
 public class Player implements pentos.sim.Player {
-
-     //                        empty residence factory p/w side  road  firstroad  firstpark/first water
-    private int[] factory_to = {0,   -10,       2,      0,   0,    1,         5};
-    private int[] residence_to = {0,    5,        -10,    1,   0,    1,         8,                 10};
-    private int[] waterpark_to = {0,   1,        0,      1,   -10,  -5};
+                            
+     //                        empty residence factory p/w side  road  firstroad  first_factory      divide100
+    private int[] factory_to = {0,   0,       1,      0,   1,    1,         1,       3,                300};
+    //                        empty residence factory p/w  side  road  firstroad  firstpark/first water divide
+    private int[] residence_to = {0,    4,      0,      4,  2,    3,         0,                 7,      500};
+    private int[] waterpark_to = {-3,    0,       3,     -1,   -1,   -4};
     private Random gen = new Random();
     final int ITERATION_COUNT = 200;
     final int side = 50;
@@ -24,6 +25,10 @@ public class Player implements pentos.sim.Player {
     public void init() {
         isDisconnected = new boolean[side][side];
         //getParameters();
+        // for (int tmp :factory_to ) {
+        //     System.out.print(tmp);
+        //     System.out.print(" ");
+        // }
     }
 
     public void getParameters(){
@@ -99,7 +104,7 @@ public class Player implements pentos.sim.Player {
                         
 
                     int perimeter = 0;
-                    boolean first_resident_or_wp = true;
+                    boolean first_resident_or_wp = true, first_road = true;
                     
                     for(Cell x : shiftedCells) {
                         for(Cell y : x.neighbors()) {
@@ -110,36 +115,47 @@ public class Player implements pentos.sim.Player {
                             //  perimeter+=2;
                             // }
                             Cell.Type t = land.getCellType(y.i,y.j);
+                            if (t == Cell.Type.EMPTY) {
+                                perimeter+=residence_to[0];
+                            }
                             if (t == Cell.Type.ROAD) {
-                                perimeter+=1;
+                                perimeter+=residence_to[5];
+                                if(first_road) {
+                                    perimeter += residence_to[6];
+                                    first_road = false;
+                                }
                             }
                             if (t == Cell.Type.RESIDENCE) {
-                                perimeter+=2;
+                                perimeter+=residence_to[1];
                             }
                             if (t == Cell.Type.WATER || t == Cell.Type.PARK) {
-                                perimeter+=2;
+                                perimeter+=residence_to[3];
                             }
                             if(first_resident_or_wp && (t == Cell.Type.WATER || t == Cell.Type.PARK || t == Cell.Type.RESIDENCE) ){
                                 if (first_resident_or_wp) {
                                     first_resident_or_wp= false;
-                                    perimeter+=5;
+                                    perimeter+=residence_to[7];
                                 }
                             }
                         }
-                        if(x.i == 0 || x.i == land.side - 1) perimeter+=2;
-                        if(x.j == 0 || x.j == land.side - 1) perimeter+=2;     
-
-
+                        if(x.i == 0 || x.i == land.side - 1) {
+                            perimeter+=residence_to[4];
+                            if(first_road) {
+                                perimeter += residence_to[6];
+                                first_road = false;
+                            }
+                            
+                        }
+                        if(x.j == 0 || x.j == land.side - 1) {
+                            perimeter+=residence_to[4];
+                            if(first_road) {
+                                perimeter += residence_to[6];
+                                first_road = false;
+                            }
+                        }
                     }
                     
-
-                    Set<Cell> neighbors_one = new HashSet<Cell>(shiftedCells);
-                    neighbors_one.addAll(getNeighbors(shiftedCells,land));
-                    Set<Cell> neighbors_two = getNeighbors(neighbors_one,land);
-                    for(Cell n:neighbors_two){
-                        if(land.getCellType(n.i,n.j) == Cell.Type.FACTORY) perimeter -= 10;
-                    }
-
+                    
                     // builda road to connect this building to perimeter
                     
                     if(!disconnected && ((perimeter > best_perimeter)
@@ -196,15 +212,18 @@ public class Player implements pentos.sim.Player {
                                 continue;
                             }
                             Cell.Type t = land.getCellType(y.i,y.j);
+                            if (t == Cell.Type.EMPTY) {
+                                perimeter+=factory_to[0];
+                            }
                             if (t == Cell.Type.FACTORY) {
-                                perimeter+=2;
+                                perimeter+=factory_to[2];
                                 if(first_factory){
                                     first_factory =false;
-                                    perimeter+=10;
+                                    perimeter+=factory_to[7];
                                 }
                             }
                             if (t == Cell.Type.ROAD) {
-                                perimeter+=2;
+                                perimeter+=factory_to[6];
                             }
                             // if (land.land[y.i][y.j].isWater()) {
                             //  perimeter+=2;
@@ -214,8 +233,8 @@ public class Player implements pentos.sim.Player {
                             // }
 
                         }
-                        //if(x.i == 0 || x.i == land.side - 1) perimeter+=2;
-                        //if(x.j == 0 || x.j == land.side - 1) perimeter+=2;                      
+                        if(x.i == 0 || x.i == land.side - 1) perimeter+=factory_to[4];
+                        if(x.j == 0 || x.j == land.side - 1) perimeter+=factory_to[4];                      
                     }
 
                     Set<Cell> neighbors_one = new HashSet<Cell>(shiftedCells);
@@ -278,6 +297,7 @@ public class Player implements pentos.sim.Player {
                         // if (t == Cell.Type.FACTORY) {
                         //     perimeter+=2;
                         // }
+
                         if (t == Cell.Type.ROAD) {
                             perimeter+=200;
                         }
@@ -319,16 +339,19 @@ public class Player implements pentos.sim.Player {
                             if (park_option.contains(y)) continue;
                             Cell.Type t = land.getCellType(y.i,y.j);
                             if (t == Cell.Type.FACTORY) {
-                                perimeter+=2;
+                                perimeter+=waterpark_to[2];
                             }
                             // if (land.land[y.i][y.j].isRoad()) {
                             //  perimeter+=2;
                             // }
+                            if (t == Cell.Type.EMPTY) {
+                                perimeter+=waterpark_to[0];
+                            }
                             if (t == Cell.Type.RESIDENCE) {
-                                perimeter+=2;
+                                perimeter+=waterpark_to[1];
                             }
                             if (t == Cell.Type.PARK || t == Cell.Type.WATER) {
-                                perimeter+=2;
+                                perimeter+=waterpark_to[3];
                             }
                         }
                     }
@@ -355,17 +378,20 @@ public class Player implements pentos.sim.Player {
                         for(Cell y: x.neighbors()) {
                             if (park_option.contains(y)) continue;
                             Cell.Type t = land.getCellType(y.i,y.j);
+                            if (t == Cell.Type.EMPTY) {
+                                perimeter+=waterpark_to[0];
+                            }
                             if (t == Cell.Type.FACTORY) {
-                                perimeter+=2;
+                                perimeter+=waterpark_to[2];
                             }
                             // if (land.land[y.i][y.j].isRoad()) {
                             //  perimeter+=2;
                             // }
                             if (t == Cell.Type.RESIDENCE) {
-                                perimeter+=2;
+                                perimeter+=waterpark_to[1];
                             }
                             if (t == Cell.Type.PARK || t == Cell.Type.WATER) {
-                                perimeter+=2;
+                                perimeter+=waterpark_to[3];
                             }
                         }
                     }

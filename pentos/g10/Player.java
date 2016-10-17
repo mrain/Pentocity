@@ -5,6 +5,9 @@ import pentos.sim.Cell;
 import pentos.sim.Land;
 import pentos.sim.Move;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -44,18 +47,21 @@ public class Player extends pentos.g0.Player {
 	public Planner bruteForcePlanner = new BruteForcePlanner();
 	public Planner dispatchingPlanner=new DispatchingPlanner();
 	
-	 public int[] factoryRows;
+	public int[] factoryRows;
+	
+	public OutputStream writer;
+	
 
 	@Override
 	public void init() { 
-		 System.out.println("Do not really do things in init()");
+//		 System.out.println("Do not really do things in init()");
 	}
 
 	public void learnLand(Land land) {
 		this.landSize = land.side;
 		if(staticLandSize==0)
 			staticLandSize=land.side;
-		System.out.println("Initiating a player with strategy to start from two corners.");
+//		System.out.println("Initiating a player with strategy to start from two corners.");
 		factoryStart = new HashSet<>();
 		factoryStart.add(new Cell(landSize-1, landSize-1));
 		
@@ -95,6 +101,45 @@ public class Player extends pentos.g0.Player {
 
 	@Override
 	public Move play(Building request, Land land) {
+		/* Redirect output stream */
+		PrintStream stream=System.out;
+		System.setOut(new java.io.PrintStream(new java.io.OutputStream() {
+		    @Override public void write(int b) {}
+		}) {
+		    @Override public void flush() {}
+		    @Override public void close() {}
+		    @Override public void write(int b) {}
+		    @Override public void write(byte[] b) {}
+		    @Override public void write(byte[] buf, int off, int len) {}
+		    @Override public void print(boolean b) {}
+		    @Override public void print(char c) {}
+		    @Override public void print(int i) {}
+		    @Override public void print(long l) {}
+		    @Override public void print(float f) {}
+		    @Override public void print(double d) {}
+		    @Override public void print(char[] s) {}
+		    @Override public void print(String s) {}
+		    @Override public void print(Object obj) {}
+		    @Override public void println() {}
+		    @Override public void println(boolean x) {}
+		    @Override public void println(char x) {}
+		    @Override public void println(int x) {}
+		    @Override public void println(long x) {}
+		    @Override public void println(float x) {}
+		    @Override public void println(double x) {}
+		    @Override public void println(char[] x) {}
+		    @Override public void println(String x) {}
+		    @Override public void println(Object x) {}
+		    @Override public java.io.PrintStream printf(String format, Object... args) { return this; }
+		    @Override public java.io.PrintStream printf(java.util.Locale l, String format, Object... args) { return this; }
+		    @Override public java.io.PrintStream format(String format, Object... args) { return this; }
+		    @Override public java.io.PrintStream format(java.util.Locale l, String format, Object... args) { return this; }
+		    @Override public java.io.PrintStream append(CharSequence csq) { return this; }
+		    @Override public java.io.PrintStream append(CharSequence csq, int start, int end) { return this; }
+		    @Override public java.io.PrintStream append(char c) { return this; }
+		});
+		
+		
 		if (initialized == false) {
 			learnLand(land);
 		}
@@ -206,6 +251,10 @@ public class Player extends pentos.g0.Player {
 
 		/* Update vacant borders */
 		vacantBorders.removeAll(overallToOccupy);
+		
+		
+		/* Return print stream to out */
+		System.setOut(stream);
 
 		return new Move(true, // accept the move
 				willDo.getBuilding(), // building

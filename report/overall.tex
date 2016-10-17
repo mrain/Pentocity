@@ -1,1 +1,14 @@
-\subsection{Placement for While Objects}
+\subsection{Adjusting Placement for Each Move}
+
+Our Jigsaw puzzle approach turns out to be a big success. We started to seek for an improvement over that.
+
+We thought a possible ``problem" of that approach is, we only consider the perimeter change for the residence or factory that we are building.
+It may be a good idea that, for every possible placement of buildings, we first construct the road, ponds and parks if necessary or applicable. 
+Then we choose the best one by considering the perimeter change of all objects, and the number of disconnected components it creates.
+
+Surprisingly this attempt failed. The average score of 50 runs over random sequencer decreases by almost 200. Also statistics shows a decrease on
+score per water/park cell. We began to realize that it is no good to pursue the regularity above some certain point. 
+The reason behind may be, the roads, ponds and fields should be more ``exposed" so that we don't have to build additional ones
+for future buildings. Another interesting fact is, if we only consider the perimeter change of buildings and roads, the average score almost gets back
+to the original one. We guess it's more crucial to expose the ponds and fields.
+

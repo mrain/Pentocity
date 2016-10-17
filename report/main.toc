@@ -1,18 +1,25 @@
-\contentsline {section}{\numberline {1}Introduction}{2}
-\contentsline {section}{\numberline {2}Utilities for Analysis}{2}
-\contentsline {section}{\numberline {3}Strategies}{2}
-\contentsline {subsection}{\numberline {3.1}Algorithm process}{2}
-\contentsline {subsection}{\numberline {3.2}Building Placement}{2}
-\contentsline {subsubsection}{\numberline {3.2.1}global: row-by-row}{2}
-\contentsline {subsubsection}{\numberline {3.2.2}global: diagonal}{3}
-\contentsline {subsubsection}{\numberline {3.2.3}global: housing at center, factories on edges}{3}
-\contentsline {subsubsection}{\numberline {3.2.4}perimeter}{3}
-\contentsline {subsubsection}{\numberline {3.2.5}number of components}{4}
-\contentsline {subsection}{\numberline {3.3}Road Construction}{4}
-\contentsline {subsubsection}{\numberline {3.3.1}Shortest path approach}{4}
-\contentsline {subsubsection}{\numberline {3.3.2}Road pre-building}{5}
-\contentsline {subsubsection}{\numberline {3.3.3}close to the buildings}{5}
-\contentsline {subsection}{\numberline {3.4}Ponds and Fields}{5}
-\contentsline {subsection}{\numberline {3.5}Placement for While Objects}{5}
-\contentsline {section}{\numberline {4}Adversarial Distribution}{5}
-\contentsline {section}{\numberline {5}Tournament Analysis}{5}
+\contentsline {section}{\numberline {1}Introduction}{3}{section.1}
+\contentsline {section}{\numberline {2}Utilities for Analysis}{4}{section.2}
+\contentsline {subsection}{\numberline {2.1}Necessity for average utilities}{4}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}Utility Descriptions}{4}{subsection.2.2}
+\contentsline {subsubsection}{\numberline {2.2.1}Player Score}{4}{subsubsection.2.2.1}
+\contentsline {subsubsection}{\numberline {2.2.2}Number of Empty Cells}{4}{subsubsection.2.2.2}
+\contentsline {subsubsection}{\numberline {2.2.3}Number of Road Cells}{4}{subsubsection.2.2.3}
+\contentsline {subsubsection}{\numberline {2.2.4}Utility of Water/Park Cells}{4}{subsubsection.2.2.4}
+\contentsline {subsection}{\numberline {2.3}Discussion of Utilities}{4}{subsection.2.3}
+\contentsline {section}{\numberline {3}Strategies}{6}{section.3}
+\contentsline {subsection}{\numberline {3.1}Algorithm process}{6}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}Building Placement}{6}{subsection.3.2}
+\contentsline {subsubsection}{\numberline {3.2.1}global: row-by-row}{6}{subsubsection.3.2.1}
+\contentsline {subsubsection}{\numberline {3.2.2}global: diagonal}{7}{subsubsection.3.2.2}
+\contentsline {subsubsection}{\numberline {3.2.3}global: residences at center, factories on edges}{7}{subsubsection.3.2.3}
+\contentsline {subsubsection}{\numberline {3.2.4}perimeter}{8}{subsubsection.3.2.4}
+\contentsline {subsubsection}{\numberline {3.2.5}number of components}{8}{subsubsection.3.2.5}
+\contentsline {subsection}{\numberline {3.3}Road Construction}{9}{subsection.3.3}
+\contentsline {subsubsection}{\numberline {3.3.1}Shortest path approach}{9}{subsubsection.3.3.1}
+\contentsline {subsubsection}{\numberline {3.3.2}Road pre-building}{9}{subsubsection.3.3.2}
+\contentsline {subsubsection}{\numberline {3.3.3}close to the buildings}{9}{subsubsection.3.3.3}
+\contentsline {subsection}{\numberline {3.4}Ponds and Fields}{10}{subsection.3.4}
+\contentsline {subsection}{\numberline {3.5}Adjusting Placement for Each Move}{10}{subsection.3.5}
+\contentsline {section}{\numberline {4}Adversarial Distribution}{11}{section.4}
+\contentsline {section}{\numberline {5}Tournament Analysis}{12}{section.5}

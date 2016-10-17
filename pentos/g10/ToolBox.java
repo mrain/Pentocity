@@ -572,6 +572,27 @@ public class ToolBox {
 		neighbors.removeAll(toBuild);
 		return neighbors;
 	}
+	public static Set<Cell> findFirstLevelSurroundings(Set<Cell> toBuild,Land land){
+		Set<Cell> neighbors=new HashSet<>();
+		for(Cell c:toBuild){
+			int x=c.i;
+			int y=c.j;
+			int[] xs=new int[]{x-2,x-1,x,x+1,x+2};
+			int[] ys=new int[]{y-2,y-1,y,y+1,y+2};
+			for(int i=0;i<xs.length;i++){
+				for(int j=0;j<ys.length;j++){
+					int thisX=xs[i];
+					int thisY=ys[j];
+					if(thisX<0||thisX>=land.side||thisY<0||thisY>=land.side)
+						continue;
+					Cell target=new Cell(xs[i],ys[j]);
+					neighbors.add(target);
+				}
+			}
+		}
+		neighbors.removeAll(toBuild);
+		return neighbors;
+	}
 	public static int geoDistance(Cell start,Cell end){
 		return Math.abs(start.i-end.i)+Math.abs(start.j-end.j);
 	}

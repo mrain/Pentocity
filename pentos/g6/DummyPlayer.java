@@ -17,161 +17,131 @@ public class DummyPlayer implements pentos.sim.Player {
 							// is called
 
 	}
-	
-	public void initializeRoadCells(Land land){
-		for(int i=0; i<land.side; i++){
-			for(int j=0; j<land.side; j++){
-				Cell p = new Cell(i,j);
-				if(land.getCellType(p)==Cell.Type.ROAD){
-					road_cells.add(p);
-				}				
-			}
-		}
-	}
-	
-	public Move leastRoadMove(Building request, Land land){
-		//find all valid building locations and orientations
-		ArrayList<Move> moves = new ArrayList<Move>();
-		if(request.type == Building.Type.FACTORY){
-			//searching top-down, left-right
-			for(int j=0; j<land.side; j++){
-				for(int i=0; i<land.side; i++){
-					Cell p = new Cell(i,j);
-					Building[] rotations = request.rotations();
-					for(int ri=0; ri < rotations.length; ri++){
-						Building b = rotations[ri];
-						if(land.buildable(b, p))
-							moves.add(new Move(true, request, p, ri, new HashSet<Cell>(), new HashSet<Cell>(), new HashSet<Cell>()));
-					}
+
+	public void initializeRoadCells(Land land) {
+		for (int i = 0; i < land.side; i++) {
+			for (int j = 0; j < land.side; j++) {
+				if (land.getCellType(i,j) == Cell.Type.ROAD) {
+					road_cells.add(new Cell(i, j));
 				}
 			}
 		}
-		else if(request.type == Building.Type.FACTORY){
-			//Searching top-down, right-left
-			for(int j=0; j<land.side; j++){
-				for(int i=land.side; i>=0; i--){
-					Cell p = new Cell(i,j);
-					Building[] rotations = request.rotations();
-					for(int ri=0; ri < rotations.length; ri++){
-						Building b = rotations[ri];
-						if(land.buildable(b, p))
-							moves.add(new Move(true, request, p, ri, new HashSet<Cell>(), new HashSet<Cell>(), new HashSet<Cell>()));
-					}
-				}
-			}
-		}
-		//Reject is no valid placements exist
-		if(moves.isEmpty())
-			return new Move(false);
-		
-		ArrayList<Move> moves2 = new ArrayList<Move>();
-		//Iterate through the moves and find their shortest roads for each
-		for(int i=0; i<moves.size(); i++){
-			Move mc = moves.get(i);
-			// get coordinates of building placement (position plus local
-						// building cell coordinates)
-						Set<Cell> shiftedCells = new HashSet<Cell>();
-						for (Cell x : mc.request.rotations()[mc.rotation])
-							shiftedCells.add(new Cell(x.i + mc.location.i, x.j + mc.location.j));
-						// builda road to connect this building to perimeter
-						Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
-						if(roadCells == null){
-							continue;
-						}
-						else {
-							mc.road = roadCells;
-							moves2.add(mc);
-						}
-		}
-		moves = moves2;
-		
-		//Reject is no valid placements exist
-		if(moves.isEmpty())
-			return new Move(false);
-		
-		//Find minimum road length move
-		int minimumIndex =0;
-		for(int i=0; i<moves.size(); i++){
-			if(moves.get(i).road.size() < moves.get(minimumIndex).road.size())
-				minimumIndex = i;
-		}
-		
-		Move chosenMove = moves.get(minimumIndex);
-		road_cells.addAll(chosenMove.road); //Adding this road to the set of roads
-		return chosenMove;
 	}
-	
-	
-	public Move play(Building request, Land land) {
+
+	public Move leastRoadMove(Building request, Land land) {
 		// find all valid building locations and orientations
 		ArrayList<Move> moves = new ArrayList<Move>();
-		for (int i = 0; i < land.side; i++)
+		if (request.type == Building.Type.FACTORY) {
+			// searching top-down, left-right
 			for (int j = 0; j < land.side; j++) {
-				Cell p = new Cell(i, j);
-				Building[] rotations = request.rotations();
-				for (int ri = 0; ri < rotations.length; ri++) {
-					Building b = rotations[ri];
-					if (land.buildable(b, p))
-						moves.add(new Move(true, request, p, ri, new HashSet<Cell>(), new HashSet<Cell>(),
-								new HashSet<Cell>()));
+				for (int i = 0; i < land.side; i++) {
+					Cell p = new Cell(i, j);
+					Building[] rotations = request.rotations();
+					for (int ri = 0; ri < rotations.length; ri++) {
+						Building b = rotations[ri];
+						if (land.buildable(b, p))
+							moves.add(new Move(true, request, p, ri, new HashSet<Cell>(), new HashSet<Cell>(),
+									new HashSet<Cell>()));
+					}
 				}
 			}
-		// choose a building placement at random
-		if (moves.isEmpty()) // reject if no valid placements
-			return new Move(false);
-		else {
-			Move chosen;
-			if(request.type==Type.FACTORY){
-				chosen=moves.get(0);
-			}
-			else if(request.type==Type.RESIDENCE){
-				chosen=moves.get(moves.size()-1);
-			}
-			else{
-				chosen = moves.get(gen.nextInt(moves.size()));
-			}
-			// get coordinates of building placement (position plus local
-			// building cell coordinates)
-			Set<Cell> shiftedCells = new HashSet<Cell>();
-			for (Cell x : chosen.request.rotations()[chosen.rotation])
-				shiftedCells.add(new Cell(x.i + chosen.location.i, x.j + chosen.location.j));
-			// builda road to connect this building to perimeter
-			Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
-			if (roadCells != null) {
-				chosen.road = roadCells;
-				road_cells.addAll(roadCells);
-				if (request.type == Building.Type.RESIDENCE) { // for
-																// residences,
-																// build random
-																// ponds and
-																// fields
-																// connected to
-																// it
-					Set<Cell> markedForConstruction = new HashSet<Cell>();
-					markedForConstruction.addAll(roadCells);
-					chosen.water = randomWalk(shiftedCells, markedForConstruction, land, 4);
-					markedForConstruction.addAll(chosen.water);
-					chosen.park = randomWalk(shiftedCells, markedForConstruction, land, 4);
+		} else if (request.type == Building.Type.RESIDENCE) {
+			// Searching top-down, right-left
+			for (int j = land.side; j >= 0; --j) {
+				for (int i = 0; i < land.side; ++i) {
+					Cell p = new Cell(i, j);
+					Building[] rotations = request.rotations();
+					for (int ri = 0; ri < rotations.length; ri++) {
+						Building b = rotations[ri];
+						if (land.buildable(b, p))
+							moves.add(new Move(true, request, p, ri, new HashSet<Cell>(), new HashSet<Cell>(),
+									new HashSet<Cell>()));
+					}
 				}
-				return chosen;
-			} else {
-				// reject placement if building cannot be connected by road
-				return new Move(false);
 			}
 		}
+		// Reject is no valid placements exist
+		if (moves.isEmpty())
+			return new Move(false);
+
+		ArrayList<Move> moves2 = new ArrayList<Move>();
+		boolean checkEmptyNeighborRoadAdj = true;
+		
+		while(true){
+			// Iterate through the moves and find their shortest roads for each
+			for (Move mc : moves) {
+				// get coordinates of building placement 
+				// (position plus local building cell coordinates)
+				Set<Cell> shiftedCells = new HashSet<Cell>();
+				for (Cell x : mc.request.rotations()[mc.rotation])
+					shiftedCells.add(new Cell(x.i + mc.location.i, x.j + mc.location.j));
+				// build a road to connect this building to perimeter
+				Set<Cell> roadCells = findShortestRoad(shiftedCells, land);
+//				if (roadCells.size()==0) {
+//					if (!isNextToRoad(mc.location.i, mc.location.j, mc.request, land)) {
+//						continue;
+//					}
+//				}
+				if(roadCells == null){
+					continue;
+				}
+				else if(checkEmptyNeighborRoadAdj && !areNeighborsNextToRoad(mc.location.i, mc.location.j, mc.request.rotations()[mc.rotation], land, roadCells)){
+					continue;
+				}
+				else {
+					mc.road = roadCells;
+					moves2.add(mc);
+				}
+			}
+			if(checkEmptyNeighborRoadAdj && moves2.isEmpty()){
+				checkEmptyNeighborRoadAdj=false;
+				//System.out.println("Failed using neighborsRoadChecking");
+			}
+			else{
+				break;
+			}
+		}
+		
+		
+		moves = moves2;
+
+		// Reject if no valid placements exist
+		if (moves.isEmpty())
+			return new Move(false);
+
+		// Find minimum road length move
+		int minimumIndex = 0;
+		for (int i = 0; i < moves.size(); i++) {
+			if (moves.get(i).road.size() < moves.get(minimumIndex).road.size())
+				minimumIndex = i;
+		}
+
+		Move chosenMove = moves.get(minimumIndex);
+		road_cells.addAll(chosenMove.road); // Adding this road to the set of
+											// roads
+		return chosenMove;
 	}
-	
+
+	public Move play(Building request, Land land) {
+		return leastRoadMove(request, land);
+	}
+
 	// build shortest sequence of road cells to connect to a set of cells b
 	private Set<Cell> findShortestRoad(Set<Cell> b, Land land) {
+		for (Cell cell : b) {
+			if (isNextToRoad(cell.i, cell.j, land))
+				return new HashSet<Cell>();
+		}
+		
 		Set<Cell> output = new HashSet<Cell>();
 		boolean[][] checked = new boolean[land.side][land.side];
 		Queue<Cell> queue = new LinkedList<Cell>();
 		// add border cells that don't have a road currently
 		// dummy cell to serve as road connector to perimeter cells
-		Cell source = new Cell(Integer.MAX_VALUE, Integer.MAX_VALUE); 
+		Cell source = new Cell(Integer.MAX_VALUE, Integer.MAX_VALUE);
 		for (int z = 0; z < land.side; z++) {
 			if (b.contains(new Cell(0, z)) || b.contains(new Cell(z, 0)) || b.contains(new Cell(land.side - 1, z))
-					|| b.contains(new Cell(z, land.side - 1))) // if already on border don't build any roads
+					|| b.contains(new Cell(z, land.side - 1)))
 				return output;
 			if (land.unoccupied(0, z))
 				queue.add(new Cell(0, z, source));
@@ -218,36 +188,111 @@ public class DummyPlayer implements pentos.sim.Player {
 			return output;
 	}
 
-	// walk n consecutive cells starting from a building. Used to build a random
-	// field or pond.
-	private Set<Cell> randomWalk(Set<Cell> b, Set<Cell> marked, Land land, int n) {
-		ArrayList<Cell> adjCells = new ArrayList<Cell>();
-		Set<Cell> output = new HashSet<Cell>();
-		for (Cell p : b) {
-			for (Cell q : p.neighbors()) {
-				if (land.isField(q) || land.isPond(q))
-					return new HashSet<Cell>();
-				if (!b.contains(q) && !marked.contains(q) && land.unoccupied(q))
-					adjCells.add(q);
+	private boolean areNeighborsNextToRoad(int locI, int locJ, Building request, Land land, Set<Cell> road){
+		Iterator<Cell> cIt = request.iterator();
+		Set<Cell> emptyNeighbors = new HashSet<Cell>();
+		while (cIt.hasNext()) {
+			Cell c = cIt.next();
+			if (locJ + c.j + 1 < land.side && land.getCellType(locI + c.i, locJ + c.j + 1) == Cell.Type.EMPTY)
+				emptyNeighbors.add(new Cell(locI + c.i, locJ + c.j + 1));
+			if (locJ + c.j - 1 >= 0 && land.getCellType(locI + c.i, locJ + c.j - 1) == Cell.Type.EMPTY)
+				emptyNeighbors.add(new Cell(locI + c.i, locJ + c.j - 1));
+			if (locI + c.i + 1 < land.side && land.getCellType(locI + c.i + 1, locJ + c.j) == Cell.Type.EMPTY)
+				emptyNeighbors.add(new Cell(locI + c.i + 1, locJ + c.j));
+			if (locI + c.i - 1 >= 0 && land.getCellType(locI + c.i - 1, locJ + c.j) == Cell.Type.EMPTY)
+				emptyNeighbors.add(new Cell(locI + c.i - 1, locJ + c.j));
+		}
+//		for(Cell c : emptyNeighbors){
+//			if(!road.contains(c) && isNextToRoad(c.i, c.j, land)){
+//				if(	road.isEmpty() || isNextToSet(c.i, c.j, land, road) ){
+//					return true;
+//				}
+//			}
+//		}
+		for(Cell c : emptyNeighbors){
+			if(road.isEmpty() && isNextToRoad(c.i, c.j, land))
+				return true;
+			else if(!road.isEmpty() && setHas2EmptyNeighbors(road,land))
+				return true;
+		}
+		return false;
+	}
+	
+	private boolean setHas2EmptyNeighbors(Set<Cell> set, Land land){
+		Iterator<Cell> cIt = set.iterator();
+		int count=0;
+		while(cIt.hasNext()){
+			Cell c = cIt.next();
+			Cell c1, c2, c3, c4;
+			if(c.j+1 <= land.side){
+				c1 = new Cell(c.i, c.j+1);
+				if(!(c1.i < 0 || c1.i >= land.side || c1.j < 0 || c1.j >= land.side) && !set.contains(c1) && land.getCellType(c1)==Cell.Type.EMPTY)
+					count++;//return true;
+			}
+			if(c.j-1 > 0){
+				c2 = new Cell(c.i, c.j-1);
+				if(!(c2.i < 0 || c2.i >= land.side || c2.j < 0 || c2.j >= land.side) && !set.contains(c2) && land.getCellType(c2)==Cell.Type.EMPTY)
+					count++;//return true;
+			}
+			if(c.i + 1 <= land.side){
+				c3 = new Cell(c.i+1, c.j);
+				if(!(c3.i < 0 || c3.i >= land.side || c3.j < 0 || c3.j >= land.side) && !set.contains(c3) && land.getCellType(c3)==Cell.Type.EMPTY)
+					count++;//return true;
+			}
+			if(c.i-1 > 0){
+				c4 = new Cell(c.i-1, c.j);
+				if(!(c4.i < 0 || c4.i >= land.side || c4.j < 0 || c4.j >= land.side) && !set.contains(c4) &&land.getCellType(c4)==Cell.Type.EMPTY)
+					count++;//return true;
+			}
+
+		}
+		//System.out.println("Count is: " + count);
+		return (count>=2);//return false;
+	}
+	
+	private boolean isNextToRoad(int locI, int locJ, Building request, Land land) {
+		Iterator<Cell> cIt = request.iterator();
+		while (cIt.hasNext()) {
+			Cell c = cIt.next();
+			if (locJ + c.j+ 1 >= land.side || land.getCellType(locI + c.i, locJ + c.j + 1) == Cell.Type.ROAD)
+				return true;
+			if (locJ + c.j - 1 < 0 || land.getCellType(locI + c.i, locJ + c.j - 1) == Cell.Type.ROAD)
+				return true;
+			if (locI + c.i + 1 >= land.side || land.getCellType(locI + c.i + 1, locJ + c.j) == Cell.Type.ROAD)
+				return true;
+			if (locI + c.i - 1 < 0 || land.getCellType(locI + c.i - 1, locJ + c.j) == Cell.Type.ROAD)
+				return true;
+		}
+		return false;
+	}
+	
+	private boolean isNextToSet(int locI, int locJ, Land land, Set<Cell> set){
+		if (!(locJ < land.side) || !(locJ >= 0) || !(locI < land.side) || !(locI >= 0)	)
+			throw new RuntimeException("Bad cell");
+		else{ //Don't need to check if neighbor is a valid cell as long as set is only valid cells
+			Cell c1 = new Cell(locI, locJ+1);
+			Cell c2 = new Cell(locI, locJ-1);
+			Cell c3 = new Cell(locI+1, locJ);
+			Cell c4 = new Cell(locI-1, locJ);
+			if(set.contains(c1) || set.contains(c2) || set.contains(c3) || set.contains(c4)){
+				return true;
+			}
+			else{
+				return false;
 			}
 		}
-		if (adjCells.isEmpty())
-			return new HashSet<Cell>();
-		Cell tail = adjCells.get(gen.nextInt(adjCells.size()));
-		for (int ii = 0; ii < n; ii++) {
-			ArrayList<Cell> walk_cells = new ArrayList<Cell>();
-			for (Cell p : tail.neighbors()) {
-				if (!b.contains(p) && !marked.contains(p) && land.unoccupied(p) && !output.contains(p))
-					walk_cells.add(p);
-			}
-			if (walk_cells.isEmpty()) {
-				// return output; //if you want to build it anyway
-				return new HashSet<Cell>();
-			}
-			output.add(tail);
-			tail = walk_cells.get(gen.nextInt(walk_cells.size()));
-		}
-		return output;
+	}
+	
+	private boolean isNextToRoad(int locI, int locJ, Land land) {
+		if (locJ + 1 >= land.side || land.getCellType(locI, locJ + 1) == Cell.Type.ROAD)
+			return true;
+		if (locJ - 1 < 0 || land.getCellType(locI, locJ - 1) == Cell.Type.ROAD)
+			return true;
+		if (locI + 1 >= land.side || land.getCellType(locI + 1, locJ) == Cell.Type.ROAD)
+			return true;
+		if (locI - 1 < 0 || land.getCellType(locI - 1, locJ) == Cell.Type.ROAD)
+			return true;
+		return false;
 	}
 
 }

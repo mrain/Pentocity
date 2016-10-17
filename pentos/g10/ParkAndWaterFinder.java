@@ -3,6 +3,7 @@ package pentos.g10;
 import java.util.Set;
 import java.util.*;
 
+import pentos.sim.Building;
 import pentos.sim.Cell;
 import pentos.sim.Land;
 
@@ -28,13 +29,10 @@ public class ParkAndWaterFinder {
 		}
 		return result;
 	}
-
 	/*
-	 * Find neighbors 2 cells away
-	 */
-	/*
-	 * 3 scenarios: 1. No ponds or parks around, parks to the left and ponds to
-	 * the right 2. Ponds or parks around, connect itself to it and put another
+	 * 3 scenarios: 
+	 *  1. If there is a whitespace that cannot put anything in, put a park
+	 *  2. Ponds or parks around, connect itself to it and put another
 	 * on the other side 3. Factory around, put a thing between residence and
 	 * factory 4. Border around, put a thing opposite to the border
 	 */
@@ -42,7 +40,7 @@ public class ParkAndWaterFinder {
 		Set<Cell> cells = action.getAbsoluteBuildingCells();
 		Set<Cell> toCover = ToolBox.combineSets(cells, action.getRoadCells());
 
-//		Set<Cell> allNeighbors = findTwoLevelNeighbors(cells, land);
+		// Set<Cell> allNeighbors = findTwoLevelNeighbors(cells, land);
 		Set<Cell> allNeighbors = findThreeLevelNeighbors(cells, land);
 		boolean decided = false;
 		Set<Cell> fieldsToBuild = new HashSet<>();
@@ -81,6 +79,7 @@ public class ParkAndWaterFinder {
 			} else {
 				// If there is border, put the field to the opposite
 				int border = ToolBox.findClosestBorder(c, action, land);
+				System.out.println("Border is:"+border);
 				if (border == -1)// not border
 					continue;
 				Set<Cell> oppoBorder;
@@ -102,36 +101,110 @@ public class ParkAndWaterFinder {
 			}
 		}
 		if (decided) {
-			return removeExistingFields(fieldsToBuild, land);
+			Set<Cell> toReturn=removeExistingFields(fieldsToBuild, land);
+			System.out.println("Parks found by meeting criteria:"+toReturn);
+			return toReturn;
 		}
+		
+//		//If there is a whitespace that cannot be used for anything else, put a park
+//		Set<Cell> firstLevelSur=ToolBox.findFirstLevelSurroundings(toCover,land);
+//		System.out.println("Checking through first level neighbors: "+firstLevelSur);
+//		Set<Cell> fields=null;
+//		//find the connected whitespace
+//		for(Cell f:firstLevelSur){
+//			if(land.unoccupied(f)){
+//				System.out.println(f+" is not occupied yet!");
+//				Set<Cell> connectedNeighbors=findConnectedNeighbors(f,toCover,land);
+//				if(connectedNeighbors.size()>4){
+//					System.out.println("Vacant neighbors available for residence. Don't build parks.");
+//					Cell[] imaginaryCells=connectedNeighbors.toArray(new Cell[connectedNeighbors.size()]);
+//					Building imaginaryBuilding=new Building(imaginaryCells,Building.Type.RESIDENCE);
+//					Action newAction=new Action(imaginaryBuilding,new Cell(0,0),0);
+//					Set<Cell> roadsToConnect=RoadFinder.findRoad(player, newAction, land);
+//					if(roadsToConnect.size()==0){
+//						//it can be adjacent to roads
+//						Set<Cell> roadNeighbors=ToolBox.setInterception(player.roadNeighbors, connectedNeighbors);
+//						if(roadNeighbors.size()>0){
+//							System.out.println("White space connected to road already. Leave it.");
+//							fields=new HashSet<Cell>();
+//							decided=true;
+//						}else{
+//							System.out.println("White space cannot connect to a road. Build a park.");
+//							fields=growFieldsFrom(f, toCover, land);
+//							decided=true;
+//						}
+//					}
+//				}else{
+//					System.out.println("The whitespace cannot be used to anything else. Build a park.");
+//					fields=connectedNeighbors;
+//					decided=true;
+//				}
+//			}
+//		}
+//		if (decided) {
+//			Set<Cell> toReturn=removeExistingFields(fieldsToBuild, land);
+//			System.out.println("Parks found by filling whitespace:"+toReturn);
+//			return toReturn;
+//		}
 
-		// If no situation is met, build fields to the left
+		// If no situation is met, build fields to the right
 		Cell start = action.getStartPoint();
 		Set<Cell> fields = growFieldsFrom(start, toCover, land);
 		System.out.println("The fields to build are:" + fields);
-		if(fields==null){
+		if (fields == null) {
 			start = ToolBox.findTopRight(cells);
 			fields = growFieldsFrom(start, toCover, land);
 			System.out.println("The fields to build are:" + fields);
 		}
-
-		return removeExistingFields(fields, land);
+		Set<Cell> toReturn=removeExistingFields(fieldsToBuild, land);
+		System.out.println("Parks found by filling whitespace:"+toReturn);
+		return toReturn;
+	}
+	public static Set<Cell> findConnectedNeighbors(Cell start,Set<Cell> toOccupy,Land land){
+		System.out.println("Looking for connected vacant neighbor cells from "+start);
+		Set<Cell> vacant=new HashSet<>();
+		Set<Cell> toCheck=new HashSet<>();
+		toCheck.add(start);
+		Set<Cell> checked=new HashSet<>();
+		checked.add(start);
+		while(vacant.size()<5){
+			Set<Cell> vacantNeighbors=ToolBox.vacantNeighbors(toCheck, toOccupy, land);
+			vacantNeighbors.removeAll(checked);
+			if(vacantNeighbors.size()==0){
+				System.out.println("No vacant neighbors. Stop.");
+				break;
+			}
+			vacant.addAll(vacantNeighbors);
+			toCheck.clear();
+			toCheck.addAll(vacantNeighbors);
+			checked.addAll(vacantNeighbors);
+		}
+		System.out.println("Found connected vacant neighbor cells: "+vacant);
+		return vacant;
 	}
 
 	public static Set<Cell> growFieldsFrom(Cell start, Set<Cell> toOccupy, Land land) {
-		Set<Cell> startPoints = new HashSet<>();
-		startPoints.add(start);
-		Set<Cell> vacantNeighbors = ToolBox.vacantNeighbors(startPoints, toOccupy, land);
-		if (vacantNeighbors.size() == 0) {
-			System.out.println("No vacant starting points for fields.");
+		Set<Cell> result;
+		if(land.unoccupied(start)&&(!toOccupy.contains(start))){
+			System.out.println("The cell is vacant, build parks from here.");
+			Set<Cell> vacantNeighbors=new HashSet<>();
+			vacantNeighbors.add(start);
+			result = growField(vacantNeighbors, toOccupy, land);
+		}else{
+			Set<Cell> startPoints = new HashSet<>();
+			startPoints.add(start);
+			Set<Cell> vacantNeighbors = ToolBox.vacantNeighbors(startPoints, toOccupy, land);
+			if (vacantNeighbors.size() == 0) {
+				System.out.println("No vacant starting points for fields.");
+			}
+			result = growField(vacantNeighbors, toOccupy, land);
 		}
-		Set<Cell> result = growField(vacantNeighbors, toOccupy, land);
+		
 		return result;
 	}
 
 	public static Set<Cell> growField(Set<Cell> startPoint, Set<Cell> toCover, Land land) {
-		if (startPoint.contains(new Cell(0, 7)))
-			System.out.println("Canary!");
+		System.out.println("Growing fields from "+startPoint);
 		boolean found = false;
 		Set<Cell> bestFields = new HashSet<>();
 		for (Cell c : startPoint) {
@@ -171,7 +244,7 @@ public class ParkAndWaterFinder {
 		Set<Cell> cells = action.getAbsoluteBuildingCells();
 		Set<Cell> toCover = ToolBox.combineSets(cells, action.getRoadCells(), action.getParkCells());
 
-//		Set<Cell> allNeighbors = findTwoLevelNeighbors(cells, land);
+		// Set<Cell> allNeighbors = findTwoLevelNeighbors(cells, land);
 		Set<Cell> allNeighbors = findThreeLevelNeighbors(cells, land);
 		boolean decided = false;
 		Set<Cell> waterToBuild = new HashSet<>();
@@ -203,11 +276,11 @@ public class ParkAndWaterFinder {
 			// Find a factory, put things in between
 			else if (land.getCellType(c) == Cell.Type.FACTORY) {
 				System.out.println("Leave the factories to parks.");
-				// Set<Cell> midWater = betweenFactory(c, cells, toCover, land);
-				// if (midWater != null) {
-				// waterToBuild.addAll(midWater);
-				// decided = true;
-				// }
+				 Set<Cell> midWater = betweenFactory(c, cells, toCover, land);
+				 if (midWater != null) {
+				 waterToBuild.addAll(midWater);
+				 decided = true;
+				 }
 			} else {
 				System.out.println("Leave the borders to the parks.");
 				// // If there is border, put the field to the opposite
@@ -240,7 +313,7 @@ public class ParkAndWaterFinder {
 		Cell start = ToolBox.findBottomLeft(cells);
 		Set<Cell> water = growWaterFrom(start, toCover, land);
 		System.out.println("The water to build are:" + water);
-		if(water==null){
+		if (water == null) {
 			start = ToolBox.findBottomRight(cells);
 			water = growWaterFrom(start, toCover, land);
 			System.out.println("The water to build are:" + water);
@@ -353,13 +426,14 @@ public class ParkAndWaterFinder {
 
 		return directNeighbors;
 	}
+
 	public static Set<Cell> findThreeLevelNeighbors(Set<Cell> toBuild, Land land) {
 		Set<Cell> directNeighbors = ToolBox.allNeighbors(toBuild);
 		Set<Cell> indirectNeighbors = ToolBox.allNeighbors(directNeighbors);
 		Set<Cell> fartherNeighbors = ToolBox.allNeighbors(indirectNeighbors);
 		fartherNeighbors.addAll(indirectNeighbors);
 		fartherNeighbors.removeAll(toBuild);
-		
+
 		System.out.println(fartherNeighbors.size() + " neighbors in distance of 3");
 
 		return fartherNeighbors;

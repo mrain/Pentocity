@@ -6,12 +6,12 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
 
+import pentos.g10.RoadFinder;
 import pentos.sim.Building;
 import pentos.sim.Building.Type;
 import pentos.sim.Cell;
 import pentos.sim.Land;
 import pentos.sim.Move;
-import pentos.g0.*;
 
 public class Player implements pentos.sim.Player {
 
@@ -43,8 +43,9 @@ public class Player implements pentos.sim.Player {
 			if (move.accept == true) {
 				return move;
 			}
-			//pentos.g3.Player player3 = new pentos.g3.Player();
-			//return player3.play(request, land);
+			
+			
+			//System.out.println("Request forwarded to dummy player");
 			DummyPlayer dummyplayer = new DummyPlayer();
 			dummyplayer.initializeRoadCells(land);
 			return dummyplayer.leastRoadMove(request, land);
@@ -71,7 +72,7 @@ public class Player implements pentos.sim.Player {
 
 		int[] factoryDimensions = getBuildingDimensions(request);
 
-		System.out.println("Factory Request: " + factoryDimensions[0] + " " + factoryDimensions[1]);
+		//System.out.println("Factory Request: " + factoryDimensions[0] + " " + factoryDimensions[1]);
 
 		Row bestRow = null;
 		int minLength = -1;
@@ -82,11 +83,11 @@ public class Player implements pentos.sim.Player {
 			promotionBump++;
 			
 			// This is checking for the best row if you use the first dimension of the factory
-			if (factoryDimensions[0] + promotionBump <= 7 
+			if (factoryDimensions[0] + promotionBump <= 5
 					&& Grid.getFactoryRows().containsKey(factoryDimensions[0] + promotionBump) ) {
 				
 				for (Row row : Grid.getFactoryRows().get(factoryDimensions[0] + promotionBump)) {
-					if (!factoryRowExtendable(row, land, request.rotations()[0])) {
+					if (!factoryRowExtendable(row, land, request.rotations()[0], promotionBump)) {	
 						continue;
 					} else {
 						if (bestRow == null) {
@@ -109,11 +110,11 @@ public class Player implements pentos.sim.Player {
 			// of the factory
 			if (factoryDimensions[0] != factoryDimensions[1]) {
 				// This makes sure that Dim2 isn't the same as Dim1
-				if (factoryDimensions[1] + promotionBump <= 7 
+				if (factoryDimensions[1] + promotionBump <= 5
 						&& Grid.getFactoryRows().containsKey(factoryDimensions[1] + promotionBump) ) {
 					
 					for (Row row : Grid.getFactoryRows().get(factoryDimensions[1] + promotionBump)) {
-						if (!factoryRowExtendable(row, land, request.rotations()[1])) {
+						if (!factoryRowExtendable(row, land, request.rotations()[1], promotionBump)) {
 							continue;
 						} else {
 							if (bestRow == null) {
@@ -152,13 +153,13 @@ public class Player implements pentos.sim.Player {
 
 		// Suppose no best row was found, you should reject the request
 		if (bestRow == null) {
-			System.out.println("Rejecting because no bestRow was found.");
+			//System.out.println("Rejecting because no bestRow was found.");
 			return new Move(false);
 		} else {
 			// If threshold is exceeded, build a new row of the same size
 			if (bestRow.getCurrentLocation() > FACTORY_THRESHOLD) {
 				if (Grid.generatable(bestRow.size(), 1)) {
-					System.out.println("Building new factory row of size " + bestRow.size());
+					//System.out.println("Building new factory row of size " + bestRow.size());
 					Grid.generateFactoryRow(bestRow.size());
 				}
 			}
@@ -168,7 +169,10 @@ public class Player implements pentos.sim.Player {
 		int yLoc = (bestRow.getRoadLocation() > bestRow.getStart()) ? bestRow.getStart() + promotionBump
 				: bestRow.getStart();
 		// int yLoc = bestRow.getStart();
-		System.out.println("Building factory at " + bestRow.getCurrentLocation() + ", " + yLoc);
+		//System.out.println("Building factory at " + bestRow.getCurrentLocation() + ", " + yLoc);
+		if (!land.buildable(request, new Cell(yLoc, bestRow.getCurrentLocation()))) {
+			//System.out.println("Cannot build this factory.");
+		}
 		Cell location = new Cell(yLoc, bestRow.getCurrentLocation());
 		int rotation = (rotate) ? 1 : 0;
 
@@ -233,6 +237,8 @@ public class Player implements pentos.sim.Player {
 				}
 			}
 		}
+		
+		// Pointer to set of possible rows
 		Set<Row> possibleRows;
 		if (is5) {
 			possibleRows = Grid.getResidenceRows().get(5);
@@ -247,8 +253,9 @@ public class Player implements pentos.sim.Player {
 			rowSize = 5;
 		else if (is4)
 			rowSize = 4;
+
+		// Row doesn't exist for this size, generate new set
 		if (possibleRows == null) {
-			// row doesn't exits, generate row dynamically
 			if (Grid.generatable(rowSize, 2)) {
 				Grid.generateResidenceRow(rowSize);
 				possibleRows = Grid.getResidenceRows().get(rowSize);
@@ -256,8 +263,8 @@ public class Player implements pentos.sim.Player {
 		}
 
 		/*
-		 * Now we have the rotation we want, with the set of rows we can put it
-		 * in
+		 * Now we have the set of rotations we can use, 
+		 * and the set of rows we can put it in
 		 */
 
 		int bestOffSet = 0;
@@ -291,16 +298,15 @@ public class Player implements pentos.sim.Player {
 			}
 		}
 		
+		// Row exits, but it is unbuildable, generate another row if possible
 		if (bestRow == null) {
-			// row exits, but it is unbuildable, generate another row
-			// dynamically
 			if (Grid.generatable(rowSize, 2)) {
 				Grid.generateResidenceRow(rowSize);
 				possibleRows = Grid.getResidenceRows().get(rowSize);
 			}
 		}
 
-		// try again
+		// try same thing again
 		for (int rotation : validRotations) {
 			Building rotatedRequest = request.rotations()[rotation];
 			for (Row row : possibleRows) {
@@ -327,58 +333,100 @@ public class Player implements pentos.sim.Player {
 			}
 		}
 		
-		Building rotatedRequest;
-		if (bestRotation != -1) {
-			rotatedRequest = request.rotations()[bestRotation];
-		} else {
-			rotatedRequest = request.rotations()[validRotations.get(0)];
-			bestRotation = validRotations.get(0);
-		}
-		
 		// This is changed to true if there is no promotion
 		boolean padWithWater = false;
 		
 		// If you still didn't find anything and you were length 3, promote to 4
 		if (bestRow == null && !is4 && !is5) {
+			// Promoting to 4
 			possibleRows = Grid.getResidenceRows().get(4);
 			if (possibleRows != null) {
-				for (Row row : possibleRows) {
-					int offSet = (row.getRoadLocation() > row.getStart()) ? 1 : 0;
-					int positionInRow = residenceRowExtendPosition(land, row, rotatedRequest, offSet);
-					if (positionInRow >= 0 && positionInRow > bestLocation) {
-						bestLocation = positionInRow;
-						bestRow = row;
-						bestOffSet = offSet;
-					}
-				}
-			}
-			// If you still haven't found anything, promote to 5
-			if (bestRow == null) {
-				possibleRows = Grid.getResidenceRows().get(5);
-				if (possibleRows != null) {
+				for (int rotation : validRotations) {
+					Building rotatedRequest = request.rotations()[rotation];
 					for (Row row : possibleRows) {
-						int offSet = (row.getRoadLocation() > row.getStart()) ? 2 : 0;
+						int offSet = (row.getRoadLocation() > row.getStart()) ? 1 : 0;
 						int positionInRow = residenceRowExtendPosition(land, row, rotatedRequest, offSet);
-						if (positionInRow >= 0 && positionInRow > bestLocation) {
-							bestLocation = positionInRow;
-							bestRow = row;
-							bestOffSet = offSet;
+						if (positionInRow >= 0) {
+							if (positionInRow > bestLocation) {
+								bestLocation = positionInRow;
+								bestRow = row;
+								bestOffSet = offSet;
+								bestRotation = rotation;
+								leastLeftCells = countCellsOnLeft(rotatedRequest);
+							} else if (positionInRow == bestLocation) {
+								int leftCells = countCellsOnLeft(rotatedRequest);
+								if (leftCells < leastLeftCells) {
+									bestLocation = positionInRow;
+									bestRow = row;
+									bestOffSet = offSet;
+									bestRotation = rotation;
+									leastLeftCells = leftCells;
+								}
+							}
 						}
 					}
 				}
-
 			}
-		} else if (bestRow == null && is4) {// If you still didn't find anything
-											// and you were length 4
+
+			// Still nothing, promote to 5
+			if (bestRow == null) {
+				// Promoting to 5
+				possibleRows = Grid.getResidenceRows().get(5);
+				if (possibleRows != null) {
+					for (int rotation : validRotations) {
+						Building rotatedRequest = request.rotations()[rotation];
+						for (Row row : possibleRows) {
+							int offSet = (row.getRoadLocation() > row.getStart()) ? 2 : 0;
+							int positionInRow = residenceRowExtendPosition(land, row, rotatedRequest, offSet);
+							if (positionInRow >= 0) {
+								if (positionInRow > bestLocation) {
+									bestLocation = positionInRow;
+									bestRow = row;
+									bestOffSet = offSet;
+									bestRotation = rotation;
+									leastLeftCells = countCellsOnLeft(rotatedRequest);
+								} else if (positionInRow == bestLocation) {
+									int leftCells = countCellsOnLeft(rotatedRequest);
+									if (leftCells < leastLeftCells) {
+										bestLocation = positionInRow;
+										bestRow = row;
+										bestOffSet = offSet;
+										bestRotation = rotation;
+										leastLeftCells = leftCells;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		} else if (bestRow == null && is4) {
+			// If you still didn't find anything and you were length 4
 			possibleRows = Grid.getResidenceRows().get(5);
 			if (possibleRows != null) {
-				for (Row row : possibleRows) {
-					int offSet = (row.getRoadLocation() > row.getStart()) ? 1 : 0;
-					int positionInRow = residenceRowExtendPosition(land, row, rotatedRequest, offSet);
-					if (positionInRow >= 0 && positionInRow > bestLocation) {
-						bestLocation = positionInRow;
-						bestRow = row;
-						bestOffSet = offSet;
+				for (int rotation : validRotations) {
+					Building rotatedRequest = request.rotations()[rotation];
+					for (Row row : possibleRows) {
+						int offSet = (row.getRoadLocation() > row.getStart()) ? 1 : 0;
+						int positionInRow = residenceRowExtendPosition(land, row, rotatedRequest, offSet);
+						if (positionInRow >= 0) {
+							if (positionInRow > bestLocation) {
+								bestLocation = positionInRow;
+								bestRow = row;
+								bestOffSet = offSet;
+								bestRotation = rotation;
+								leastLeftCells = countCellsOnLeft(rotatedRequest);
+							} else if (positionInRow == bestLocation) {
+								int leftCells = countCellsOnLeft(rotatedRequest);
+								if (leftCells < leastLeftCells) {
+									bestLocation = positionInRow;
+									bestRow = row;
+									bestOffSet = offSet;
+									bestRotation = rotation;
+									leastLeftCells = leftCells;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -386,21 +434,28 @@ public class Player implements pentos.sim.Player {
 			// No promotion, so should pad
 			padWithWater = true;
 		}
+		
+		// Checking which rotation was selected
+		if (bestRotation == -1) {
+			bestRotation = validRotations.get(0);
+		}
 
-		// If it is still null, it means we didn't find the row to place it
+		// If it is still null, it means we didn't find the row to 
+		// place it (even after all the effort). Otherwise, check
+		// if we want to build a new row at this point
 		if (bestRow == null) {
 			return new Move(false);
 		} else {
 			// If threshold is exceeded, build a new row of the same size
 			if (bestRow.getCurrentLocation() < RESIDENCE_THRESHOLD) {
-				if (Grid.generatable(bestRow.size(), 1)) {
-					System.out.println("Building new residence row of size " + bestRow.size());
+				if (Grid.generatable(bestRow.size(), 2)) {
+					//System.out.println("Building new residence row of size " + bestRow.size());
 					Grid.generateResidenceRow(bestRow.size());
 				}
 			}
 		}
 
-		// All decided, now generate the complete move
+		// Everything is decided, now generate the complete move
 		Padding padding = new MyPadding();
 		if (bestRow.getRecentlyPadded() || !padWithWater) {
 			padWithWater = false;
@@ -412,9 +467,9 @@ public class Player implements pentos.sim.Player {
 		Move move = padding.getPadding(request, bestRotation, land, bestRow, bestLocation, padWithWater, bestOffSet);
 		
 		if (!land.buildable(move.request.rotations()[move.rotation], move.location)) {
-			System.out.println("***Cannot build***" + move.location.i + "," + move.location.j);
+			//System.out.println("***Cannot build***" + move.location.i + "," + move.location.j);
 		}
-		System.out.println("Building residence at " + move.location.i + "," + move.location.j);
+		//System.out.println("Building residence at " + move.location.i + "," + move.location.j);
 		// System.out.println("***Can build***");
 		return move;
 	}
@@ -438,12 +493,15 @@ public class Player implements pentos.sim.Player {
 		return new int[] { height, width };
 	}
 
-	public boolean factoryRowExtendable(Row row, Land land, Building factory) {
+	public boolean factoryRowExtendable(Row row, Land land, Building factory, int promotion) {
 		if (factory.getType() != Type.FACTORY) {
 			throw new RuntimeException("Incorrect building type inputted.");
 		}
 
 		int topCell = row.getStart();
+		if (row.getRoadLocation() > row.getStart()) {
+			topCell += promotion;
+		}
 		int leftCell = row.getCurrentLocation();
 
 		if (row.getRoadLocation() != -1 
@@ -470,14 +528,57 @@ public class Player implements pentos.sim.Player {
 			throw new RuntimeException("Incorrect building type inputted.");
 		}
 
-		int position = row.getCurrentLocation();
+		int position = row.getCurrentLocation(), roadRow = row.getRoadLocation();
 		while (position >= 0) {
 			if (land.buildable(residence, new Cell(row.getStart() + offSet, position))) {
+				if (roadRow >= 0 && roadRow <= 49) {
+					// Checking if roads haven't been blocked
+					int to = row.getCurrentLocation();
+					if (to + 1 < land.side) {
+						to += 1;
+					}
+					
+					Iterator<Cell> it = residence.iterator();
+					int from;
+					if (roadRow > row.getStart()) {
+						// Road is at the bottom
+						int maxRow = 0;
+						int maxCol = 0;
+						while (it.hasNext()) {
+							Cell c = it.next();
+							if (c.i > maxRow) {
+								maxRow = c.i;
+								maxCol = 0;
+							} else if (c.i == maxRow && c.j > maxCol) {
+								maxCol = c.j;
+							}
+						}
+						from = position + maxCol;
+					} else {
+						// Road is on top
+						int maxCol = 0;
+						while (it.hasNext()) {
+							Cell c = it.next();
+							if (c.i == 0 && c.j > maxCol) {
+								maxCol = c.j;
+							}
+						}
+						from = position + maxCol;
+					}
+					
+					for (int j = from; j <= to; ++j) {
+						// If the road is blocked to this place, cannot build in the row
+						if ((!land.unoccupied(roadRow, j)) && land.getCellType(roadRow, j) != Cell.Type.ROAD) {
+							return -1;
+						}
+					}
+				}
+				
 				return position;
 			}
 			position--;
 		}
-
+		
 		return -1;
 	}
 

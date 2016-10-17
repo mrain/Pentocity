@@ -114,7 +114,7 @@ public class Pentominos implements pentos.sim.Sequencer {
 
     public static Set <Building> buildings;
 
-    public void init() {
+    public void init(Long seed) {
     }
 
     public Building current() {
