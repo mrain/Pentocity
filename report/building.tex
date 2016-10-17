@@ -46,7 +46,14 @@ The perimeter strategy is a non-global strategy that looks at the cells around t
 
 Finally, we use the diagonal strategy as our global strategy. However, we only use it to break ties between candidates that have the same perimeter.\\
 
-We also tried a different way to count the perimeter. That is to count the number of cells surrounding the candidate location, should the building be placed there. This differs from the the ordinary perimeter strategy, since the previous strategy counts edges instead of cells, so it might count certain cells multiple times. In practice, the edge counting strategy worked better, scoring around 30 points more. The reason for this is described in the image.
+We also tried a different way to count the perimeter. That is to count the number of cells surrounding the candidate location, should the building be placed there. This differs from the the ordinary perimeter strategy, since the previous strategy counts edges instead of cells, so it might count certain cells multiple times. In practice, the edge counting strategy worked better, scoring around 30 points more. The reason for this is described in figure \ref{fig:plusu}.
+
+\begin{figure}
+\center
+\includegraphics[scale=0.05]{pentomino.jpg}
+\caption{If only the number of cells were counted, placing the U pentomino on the plus pentomino would have a score of 3, same as placing it against an edge. Counting edges gives a score of 5 versus the same 3 for an edge}
+\label{fig:plusu}
+\end{figure}
 
 As a summary, in the submitted version, we use the diagonal global strategy and the perimeter local strategy. When comparing different choices, we use the perimeter as the first key, $(i+j)$ as the second key, and $(i-j)$ as the third key.
 
@@ -68,3 +75,4 @@ Then the number of components in this example is 3.}
 \end{figure}
 
 Sadly in our experiments, we tried using the number of components as either the first or second key, but the score decreased slightly, while significantly slowing down the simulation.
+
